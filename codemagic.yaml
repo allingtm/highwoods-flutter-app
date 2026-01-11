@@ -22,6 +22,7 @@ workflows:
         script: |
           echo "SUPABASE_URL=$SUPABASE_URL" > .env
           echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> .env
+          echo "ONESIGNAL_APP_ID=$ONESIGNAL_APP_ID" >> .env
       - name: Get Flutter packages
         script: |
           flutter pub get
@@ -63,6 +64,7 @@ workflows:
         script: |
           echo "SUPABASE_URL=$SUPABASE_URL" > .env
           echo "SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY" >> .env
+          echo "ONESIGNAL_APP_ID=$ONESIGNAL_APP_ID" >> .env
       - name: Get Flutter packages
         script: |
           flutter pub get
