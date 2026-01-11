@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../providers/connections_provider.dart';
 import '../../theme/app_theme.dart';
@@ -13,14 +14,11 @@ class InviteScreen extends ConsumerStatefulWidget {
 }
 
 class _InviteScreenState extends ConsumerState<InviteScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
   final _messageController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
     _messageController.dispose();
     super.dispose();
   }
@@ -36,127 +34,109 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(tokens.spacingXl),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Icon(
-                Icons.person_add_outlined,
-                size: tokens.iconXl,
-                color: colorScheme.primary,
-              ),
-              SizedBox(height: tokens.spacingLg),
-              Text(
-                'Invite a Connection',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: tokens.spacingSm),
-              Text(
-                'Invite neighbours and local businesses to join the Highwoods community.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: tokens.spacing2xl),
-
-              // Email Field
-              TextFormField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Email Address',
-                  hintText: 'neighbour@email.com',
-                  prefixIcon: Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Please enter an email address';
-                  }
-                  final emailRegex = RegExp(
-                    r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$',
-                  );
-                  if (!emailRegex.hasMatch(value.trim())) {
-                    return 'Please enter a valid email address';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: tokens.spacingLg),
-
-              // Personal Message Field
-              TextFormField(
-                controller: _messageController,
-                maxLines: 4,
-                maxLength: 500,
-                textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Personal Message (optional)',
-                  hintText: 'Hi! I\'d love to connect with you on the Highwoods community app...',
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: tokens.spacingLg),
-
-              // Warning
-              Container(
-                padding: EdgeInsets.all(tokens.spacingMd),
-                decoration: BoxDecoration(
-                  color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(tokens.radiusMd),
-                  border: Border.all(
-                    color: colorScheme.tertiary.withValues(alpha: 0.5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Icon(
+              Icons.share_outlined,
+              size: tokens.iconXl,
+              color: colorScheme.primary,
+            ),
+            SizedBox(height: tokens.spacingLg),
+            Text(
+              'Invite a Connection',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: tokens.spacingSm),
+            Text(
+              'Share an invite link via WhatsApp, SMS, Email, or any app.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: tokens.spacing2xl),
+
+            // Personal Message Field
+            TextFormField(
+              controller: _messageController,
+              maxLines: 3,
+              maxLength: 200,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                labelText: 'Personal Message (optional)',
+                hintText: 'Add a personal note to your invitation...',
+                alignLabelWithHint: true,
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: tokens.spacingLg),
+
+            // Info Box
+            Container(
+              padding: EdgeInsets.all(tokens.spacingMd),
+              decoration: BoxDecoration(
+                color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
+                border: Border.all(
+                  color: colorScheme.tertiary.withValues(alpha: 0.5),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: colorScheme.tertiary,
-                      size: tokens.iconSm,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: colorScheme.tertiary,
+                    size: tokens.iconSm,
+                  ),
+                  SizedBox(width: tokens.spacingMd),
+                  Expanded(
+                    child: Text(
+                      'Only invite people who live or work in Highwoods',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onTertiaryContainer,
+                          ),
                     ),
-                    SizedBox(width: tokens.spacingMd),
-                    Expanded(
-                      child: Text(
-                        'Only invite people who live or work in Highwoods',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onTertiaryContainer,
-                            ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: tokens.spacingXl),
+
+            // Share Button
+            FilledButton.icon(
+              onPressed: _isLoading ? null : _shareInvitation,
+              icon: _isLoading
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.onPrimary,
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: tokens.spacingXl),
+                    )
+                  : const Icon(Icons.share),
+              label: Text(_isLoading ? 'Creating link...' : 'Share Invite Link'),
+            ),
+            SizedBox(height: tokens.spacingMd),
 
-              // Submit Button
-              FilledButton(
-                onPressed: _isLoading ? null : _sendInvitation,
-                child: _isLoading
-                    ? SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colorScheme.onPrimary,
-                        ),
-                      )
-                    : const Text('Send Invitation'),
-              ),
-              SizedBox(height: tokens.spacingXl),
+            // Share options hint
+            Text(
+              'Choose WhatsApp, SMS, Email, or any other app',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: tokens.spacing2xl),
 
-              // Sent Invitations Section
-              _buildSentInvitations(context, tokens, colorScheme),
-            ],
-          ),
+            // Sent Invitations Section
+            _buildSentInvitations(context, tokens, colorScheme),
+          ],
         ),
       ),
     );
@@ -173,7 +153,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Sent Invitations',
+          'Your Invitations',
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -186,9 +166,19 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                 child: Padding(
                   padding: EdgeInsets.all(tokens.spacingLg),
                   child: Center(
-                    child: Text(
-                      'No invitations sent yet',
-                      style: TextStyle(color: colorScheme.onSurfaceVariant),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.send_outlined,
+                          color: colorScheme.onSurfaceVariant,
+                          size: tokens.iconLg,
+                        ),
+                        SizedBox(height: tokens.spacingSm),
+                        Text(
+                          'No invitations shared yet',
+                          style: TextStyle(color: colorScheme.onSurfaceVariant),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -211,7 +201,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                         size: tokens.iconSm,
                       ),
                     ),
-                    title: Text(invitation.email),
+                    title: Text(invitation.recipientDisplay),
                     subtitle: Text(
                       '${invitation.status.name.toUpperCase()} - ${_formatDate(invitation.createdAt)}',
                       style: TextStyle(
@@ -220,10 +210,20 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                       ),
                     ),
                     trailing: invitation.isPending
-                        ? IconButton(
-                            icon: Icon(Icons.close, color: colorScheme.error),
-                            onPressed: () => _cancelInvitation(invitation.id),
-                            tooltip: 'Cancel',
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.share, color: colorScheme.primary),
+                                onPressed: () => _reshareInvitation(invitation.inviteLink, invitation.message),
+                                tooltip: 'Share again',
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.close, color: colorScheme.error),
+                                onPressed: () => _cancelInvitation(invitation.id),
+                                tooltip: 'Cancel',
+                              ),
+                            ],
                           )
                         : null,
                   ),
@@ -273,31 +273,55 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  Future<void> _sendInvitation() async {
-    if (!_formKey.currentState!.validate()) return;
+  String _buildShareMessage(String inviteLink, String? personalMessage) {
+    final buffer = StringBuffer();
+    buffer.writeln("Hey! I'd like to invite you to join the Highwoods community app.");
+    buffer.writeln();
 
+    if (personalMessage != null && personalMessage.isNotEmpty) {
+      buffer.writeln(personalMessage);
+      buffer.writeln();
+    }
+
+    buffer.writeln('Join here: $inviteLink');
+
+    return buffer.toString();
+  }
+
+  Future<void> _shareInvitation() async {
     setState(() => _isLoading = true);
 
     try {
-      await sendInvitation(
+      // Create the invitation in the database
+      final invitation = await createInvitation(
         ref,
-        email: _emailController.text.trim(),
         message: _messageController.text.trim().isNotEmpty
             ? _messageController.text.trim()
             : null,
       );
 
+      // Build the share message
+      final shareText = _buildShareMessage(
+        invitation.inviteLink,
+        invitation.message,
+      );
+
+      // Open native share sheet
+      await Share.share(
+        shareText,
+        subject: 'Join the Highwoods Community',
+      );
+
       if (mounted) {
-        _emailController.clear();
         _messageController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invitation sent successfully!')),
+          const SnackBar(content: Text('Invitation created!')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send invitation: $e')),
+          SnackBar(content: Text('Failed to create invitation: $e')),
         );
       }
     } finally {
@@ -305,6 +329,15 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _reshareInvitation(String inviteLink, String? personalMessage) async {
+    final shareText = _buildShareMessage(inviteLink, personalMessage);
+
+    await Share.share(
+      shareText,
+      subject: 'Join the Highwoods Community',
+    );
   }
 
   Future<void> _cancelInvitation(String invitationId) async {

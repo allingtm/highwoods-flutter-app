@@ -294,9 +294,9 @@ class ConnectionsRepository {
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  /// Sends an invitation to join the app
-  Future<Invitation> sendInvitation({
-    required String email,
+  /// Creates an invitation to share via native share (WhatsApp, SMS, Email, etc.)
+  /// Returns the invitation with the token/link to share
+  Future<Invitation> createInvitation({
     String? message,
   }) async {
     try {
@@ -311,8 +311,7 @@ class ConnectionsRepository {
           .from('invitations')
           .insert({
             'inviter_id': userId,
-            'email': email.toLowerCase().trim(),
-            'message': message,
+            if (message != null && message.isNotEmpty) 'message': message,
             'token': token,
           })
           .select()
@@ -320,12 +319,9 @@ class ConnectionsRepository {
 
       return Invitation.fromJson(response);
     } on PostgrestException catch (e) {
-      if (e.code == '23514') {
-        throw Exception('Invalid email format');
-      }
-      throw Exception('Failed to send invitation: ${e.message}');
+      throw Exception('Failed to create invitation: ${e.message}');
     } catch (e) {
-      throw Exception('Failed to send invitation: $e');
+      throw Exception('Failed to create invitation: $e');
     }
   }
 
