@@ -10,7 +10,10 @@ import '../../widgets/feed/feed_widgets.dart';
 
 /// Main feed screen displaying community posts
 class FeedScreen extends ConsumerStatefulWidget {
-  const FeedScreen({super.key});
+  const FeedScreen({super.key, this.onMenuTap});
+
+  /// Callback to open the side menu drawer
+  final VoidCallback? onMenuTap;
 
   @override
   ConsumerState<FeedScreen> createState() => _FeedScreenState();
@@ -80,6 +83,13 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
             SliverAppBar(
               floating: true,
               snap: true,
+              leading: widget.onMenuTap != null
+                  ? IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: widget.onMenuTap,
+                      tooltip: 'Open menu',
+                    )
+                  : null,
               title: Text(selectedCategory?.displayName ?? 'Community'),
               actions: [
                 if (isAuthenticated)

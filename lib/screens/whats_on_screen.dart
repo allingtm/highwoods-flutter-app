@@ -9,7 +9,10 @@ import '../theme/app_theme.dart';
 import '../theme/app_theme_tokens.dart';
 
 class WhatsOnScreen extends ConsumerStatefulWidget {
-  const WhatsOnScreen({super.key});
+  const WhatsOnScreen({super.key, this.onMenuTap});
+
+  /// Callback to open the side menu drawer
+  final VoidCallback? onMenuTap;
 
   @override
   ConsumerState<WhatsOnScreen> createState() => _WhatsOnScreenState();
@@ -26,6 +29,13 @@ class _WhatsOnScreenState extends ConsumerState<WhatsOnScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: widget.onMenuTap != null
+            ? IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: widget.onMenuTap,
+                tooltip: 'Open menu',
+              )
+            : null,
         title: const Text("What's On"),
       ),
       body: Column(

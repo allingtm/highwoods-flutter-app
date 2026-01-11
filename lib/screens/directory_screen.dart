@@ -9,7 +9,10 @@ import '../theme/app_theme_tokens.dart';
 
 /// Directory screen showing a feed of promos (read-only, admin managed)
 class DirectoryScreen extends ConsumerWidget {
-  const DirectoryScreen({super.key});
+  const DirectoryScreen({super.key, this.onMenuTap});
+
+  /// Callback to open the side menu drawer
+  final VoidCallback? onMenuTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,6 +22,13 @@ class DirectoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: onMenuTap != null
+            ? IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: onMenuTap,
+                tooltip: 'Open menu',
+              )
+            : null,
         title: const Text('Directory'),
       ),
       body: Column(

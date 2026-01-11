@@ -23,3 +23,10 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
   final user = ref.watch(currentUserProvider);
   return user != null;
 });
+
+/// Helper function to delete the current user's account
+/// This permanently deletes all user data and cannot be undone
+Future<void> deleteAccount(WidgetRef ref) async {
+  final authRepo = ref.read(authRepositoryProvider);
+  await authRepo.deleteAccount();
+}

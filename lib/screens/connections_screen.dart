@@ -8,7 +8,10 @@ import '../theme/app_theme.dart';
 import '../theme/app_theme_tokens.dart';
 
 class ConnectionsScreen extends ConsumerStatefulWidget {
-  const ConnectionsScreen({super.key});
+  const ConnectionsScreen({super.key, this.onMenuTap});
+
+  /// Callback to open the side menu drawer
+  final VoidCallback? onMenuTap;
 
   @override
   ConsumerState<ConnectionsScreen> createState() => _ConnectionsScreenState();
@@ -31,6 +34,13 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: widget.onMenuTap != null
+            ? IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: widget.onMenuTap,
+                tooltip: 'Open menu',
+              )
+            : null,
         title: const Text('Connections'),
         actions: [
           IconButton(

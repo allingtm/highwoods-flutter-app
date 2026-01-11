@@ -152,5 +152,31 @@ class AuthRepository {
     }
   }
 
+  /// Permanently deletes the user's account and all associated data.
+  /// This action cannot be undone.
+  Future<void> deleteAccount() async {
+    final userId = currentUser?.id;
+    if (userId == null) {
+      throw Exception('Not authenticated');
+    }
+
+    try {
+      // Call RPC function to delete all user data
+      await _supabase.rpc(
+        'delete_user_account',
+        params: {'target_user_id': userId},
+      );
+
+      // Sign out to clear local session
+      await _supabase.auth.signOut();
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to delete account: ${e.message}');
+    } on AuthException catch (e) {
+      throw Exception('Failed to delete account: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to delete account: $e');
+    }
+  }
+
   bool get isAuthenticated => currentUser != null;
 }
