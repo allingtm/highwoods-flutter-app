@@ -13,10 +13,11 @@ enum InvitationStatus {
 }
 
 /// Represents an invitation to join the app
+/// Invitations are shared via native share (WhatsApp, SMS, Email, etc.)
 class Invitation {
   final String id;
   final String inviterId;
-  final String email;
+  final String? email; // Optional - may be null when shared via native share
   final String? message;
   final String token;
   final InvitationStatus status;
@@ -28,7 +29,7 @@ class Invitation {
   Invitation({
     required this.id,
     required this.inviterId,
-    required this.email,
+    this.email,
     this.message,
     required this.token,
     required this.status,
@@ -42,7 +43,7 @@ class Invitation {
     return Invitation(
       id: json['id'] as String,
       inviterId: json['inviter_id'] as String,
-      email: json['email'] as String,
+      email: json['email'] as String?,
       message: json['message'] as String?,
       token: json['token'] as String,
       status: InvitationStatus.fromString(json['status'] as String),
@@ -59,7 +60,7 @@ class Invitation {
     return {
       'id': id,
       'inviter_id': inviterId,
-      'email': email,
+      if (email != null) 'email': email,
       if (message != null) 'message': message,
       'token': token,
       'status': status.name,
@@ -95,6 +96,12 @@ class Invitation {
       acceptedBy: acceptedBy ?? this.acceptedBy,
     );
   }
+
+  /// Get the invite link URL
+  String get inviteLink => 'https://highwoods.app/invite/$token';
+
+  /// Get display text for who the invitation was sent to
+  String get recipientDisplay => email ?? 'Shared via link';
 
   /// Check if this invitation has expired
   bool get isExpired =>
