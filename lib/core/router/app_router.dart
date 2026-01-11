@@ -16,6 +16,7 @@ import '../../screens/feed/search_screen.dart';
 import '../../screens/connections/invite_screen.dart';
 import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
+import '../../screens/directory/promo_detail_screen.dart';
 import '../../providers/auth_provider.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -159,6 +160,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final userId = state.pathParameters['userId']!;
           return ConversationScreen(otherUserId: userId);
+        },
+      ),
+      // Directory routes
+      GoRoute(
+        path: '/directory/promo/:promoId',
+        name: 'promo-detail',
+        builder: (context, state) {
+          final promoId = state.pathParameters['promoId']!;
+          return PromoDetailScreen(promoId: promoId);
         },
       ),
     ],
