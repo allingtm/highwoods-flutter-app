@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_profile_provider.dart';
+import '../services/notification_service.dart';
 import '../theme/app_theme_tokens.dart';
 import '../theme/app_colors.dart';
 import 'feed/feed_screen.dart';
@@ -18,9 +19,63 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Check for pending notification navigation on initial load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handlePendingNotification();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _handlePendingNotification();
+    }
+  }
+
+  void _handlePendingNotification() {
+    final nav = NotificationService.consumePendingNavigation();
+    if (nav == null) return;
+
+    final type = nav['type'];
+    final targetId = nav['target_id'];
+
+    if (!mounted) return;
+
+    switch (type) {
+      case 'post':
+        if (targetId != null) context.push('/post/$targetId');
+        break;
+      case 'message':
+        if (targetId != null) context.push('/connections/conversation/$targetId');
+        break;
+      case 'connection':
+        // Navigate to connections tab
+        setState(() => _selectedIndex = 3);
+        break;
+      case 'event':
+        if (targetId != null) context.push('/whatson/event/$targetId');
+        break;
+      case 'comment':
+        // Comment notification - navigate to the post
+        if (targetId != null) context.push('/post/$targetId');
+        break;
+    }
+  }
 
   void _openDrawer() {
     _scaffoldKey.currentState?.openDrawer();

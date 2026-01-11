@@ -47,5 +47,11 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>UIBackgroundModes</key>
+		<array>
+			<string>remote-notification</string>
+		</array>
+		<key>NSUserNotificationsUsageDescription</key>
+		<string>Get notified about community updates, safety alerts, events, and messages from your neighbors.</string>
 	</dict>
 </plist>

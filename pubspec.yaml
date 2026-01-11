@@ -1,7 +1,7 @@
 name: highwoods
 description: "Highwoods Residents Mobile App."
 publish_to: 'none'
-version: 0.1.1+10
+version: 0.1.1+13
 
 environment:
   sdk: ^3.5.0
@@ -29,6 +29,8 @@ dependencies:
   url_launcher: ^6.3.1
   # Calendar
   table_calendar: ^3.1.2
+  # Push Notifications
+  onesignal_flutter: ^5.3.5
 
 dev_dependencies:
   flutter_test:

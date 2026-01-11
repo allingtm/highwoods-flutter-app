@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
+import '../services/notification_service.dart';
 
 class AuthRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -144,6 +145,8 @@ class AuthRepository {
 
   Future<void> signOut() async {
     try {
+      // Clear notification user data
+      await NotificationService.logout();
       await _supabase.auth.signOut();
     } on AuthException catch (e) {
       throw Exception('Failed to sign out: ${e.message}');
@@ -166,6 +169,9 @@ class AuthRepository {
         'delete_user_account',
         params: {'target_user_id': userId},
       );
+
+      // Clear notification user data
+      await NotificationService.logout();
 
       // Sign out to clear local session
       await _supabase.auth.signOut();

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../repositories/auth_repository.dart';
+import '../services/notification_service.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
@@ -13,11 +14,27 @@ final authStateProvider = StreamProvider<AuthState>((ref) {
 
 final currentUserProvider = Provider<User?>((ref) {
   final authState = ref.watch(authStateProvider);
-  return authState.maybeWhen(
+  final user = authState.maybeWhen(
     data: (state) => state.session?.user,
     orElse: () => null,
   );
+
+  // Tag user for push notifications when they log in
+  if (user != null) {
+    _tagUserForNotifications(user);
+  }
+
+  return user;
 });
+
+/// Tags the user in OneSignal for targeted notifications
+void _tagUserForNotifications(User user) {
+  NotificationService.setExternalUserId(user.id);
+  NotificationService.setUserTags(
+    userId: user.id,
+    email: user.email,
+  );
+}
 
 final isAuthenticatedProvider = Provider<bool>((ref) {
   final user = ref.watch(currentUserProvider);

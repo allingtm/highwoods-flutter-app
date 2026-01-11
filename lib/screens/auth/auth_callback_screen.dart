@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:app_links/app_links.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/error_utils.dart';
 import '../../widgets/widgets.dart';
@@ -72,7 +73,12 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
 
                   // Profile created successfully, navigate to home
                   if (mounted) {
-                    context.go('/home');
+                    // Request notification permission for new users with rationale
+                    await NotificationService.requestPermissionWithRationale(context);
+
+                    if (mounted) {
+                      context.go('/home');
+                    }
                   }
                 } catch (e) {
                   setState(() {
