@@ -294,8 +294,19 @@ class ConnectionsRepository {
     return bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
+  /// Generates a short, human-readable invite code (e.g., ABC-DEF-GHJ)
+  /// Uses characters that avoid visual confusion (no I, O, 0, 1)
+  String _generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    final random = Random.secure();
+    final part1 = List.generate(3, (_) => chars[random.nextInt(chars.length)]).join();
+    final part2 = List.generate(3, (_) => chars[random.nextInt(chars.length)]).join();
+    final part3 = List.generate(3, (_) => chars[random.nextInt(chars.length)]).join();
+    return '$part1-$part2-$part3';
+  }
+
   /// Creates an invitation to share via native share (WhatsApp, SMS, Email, etc.)
-  /// Returns the invitation with the token/link to share
+  /// Returns the invitation with the token/link and code to share
   Future<Invitation> createInvitation({
     String? message,
   }) async {
@@ -306,6 +317,7 @@ class ConnectionsRepository {
       }
 
       final token = _generateToken();
+      final code = _generateCode();
 
       final response = await _supabase
           .from('invitations')
@@ -313,6 +325,7 @@ class ConnectionsRepository {
             'inviter_id': userId,
             if (message != null && message.isNotEmpty) 'message': message,
             'token': token,
+            'code': code,
           })
           .select()
           .single();
@@ -322,6 +335,48 @@ class ConnectionsRepository {
       throw Exception('Failed to create invitation: ${e.message}');
     } catch (e) {
       throw Exception('Failed to create invitation: $e');
+    }
+  }
+
+  /// Validates an invite code or token
+  /// Returns validation result with inviter info if valid
+  /// This works for unauthenticated users (pre-registration)
+  Future<InviteValidationResult> validateInviteCode(String code) async {
+    try {
+      final response = await _supabase.rpc(
+        'validate_invite_code',
+        params: {'invite_code': code},
+      );
+
+      final json = response as Map<String, dynamic>;
+      return InviteValidationResult.fromJson(json);
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to validate invite code: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to validate invite code: $e');
+    }
+  }
+
+  /// Accepts an invitation after successful registration
+  /// Creates a connection between inviter and new user
+  Future<void> acceptInvitation(String code) async {
+    try {
+      final userId = _currentUserId;
+      if (userId == null) {
+        throw Exception('User must be authenticated');
+      }
+
+      await _supabase.rpc(
+        'accept_invitation',
+        params: {
+          'invite_code': code,
+          'new_user_id': userId,
+        },
+      );
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to accept invitation: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to accept invitation: $e');
     }
   }
 

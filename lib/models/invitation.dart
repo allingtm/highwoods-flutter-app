@@ -12,6 +12,36 @@ enum InvitationStatus {
   }
 }
 
+/// Result of validating an invite code
+class InviteValidationResult {
+  final bool valid;
+  final String? error;
+  final String? invitationId;
+  final String? inviterName;
+  final String? inviterAvatar;
+  final String? message;
+
+  InviteValidationResult({
+    required this.valid,
+    this.error,
+    this.invitationId,
+    this.inviterName,
+    this.inviterAvatar,
+    this.message,
+  });
+
+  factory InviteValidationResult.fromJson(Map<String, dynamic> json) {
+    return InviteValidationResult(
+      valid: json['valid'] as bool,
+      error: json['error'] as String?,
+      invitationId: json['invitation_id'] as String?,
+      inviterName: json['inviter_name'] as String?,
+      inviterAvatar: json['inviter_avatar'] as String?,
+      message: json['message'] as String?,
+    );
+  }
+}
+
 /// Represents an invitation to join the app
 /// Invitations are shared via native share (WhatsApp, SMS, Email, etc.)
 class Invitation {
@@ -20,6 +50,7 @@ class Invitation {
   final String? email; // Optional - may be null when shared via native share
   final String? message;
   final String token;
+  final String? code; // Short, human-readable code (e.g., HW-ABC123)
   final InvitationStatus status;
   final DateTime createdAt;
   final DateTime expiresAt;
@@ -32,6 +63,7 @@ class Invitation {
     this.email,
     this.message,
     required this.token,
+    this.code,
     required this.status,
     required this.createdAt,
     required this.expiresAt,
@@ -46,6 +78,7 @@ class Invitation {
       email: json['email'] as String?,
       message: json['message'] as String?,
       token: json['token'] as String,
+      code: json['code'] as String?,
       status: InvitationStatus.fromString(json['status'] as String),
       createdAt: DateTime.parse(json['created_at'] as String),
       expiresAt: DateTime.parse(json['expires_at'] as String),
@@ -63,6 +96,7 @@ class Invitation {
       if (email != null) 'email': email,
       if (message != null) 'message': message,
       'token': token,
+      if (code != null) 'code': code,
       'status': status.name,
       'created_at': createdAt.toIso8601String(),
       'expires_at': expiresAt.toIso8601String(),
@@ -77,6 +111,7 @@ class Invitation {
     String? email,
     String? message,
     String? token,
+    String? code,
     InvitationStatus? status,
     DateTime? createdAt,
     DateTime? expiresAt,
@@ -89,6 +124,7 @@ class Invitation {
       email: email ?? this.email,
       message: message ?? this.message,
       token: token ?? this.token,
+      code: code ?? this.code,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       expiresAt: expiresAt ?? this.expiresAt,
@@ -98,7 +134,14 @@ class Invitation {
   }
 
   /// Get the invite link URL
-  String get inviteLink => 'https://highwoods.app/invite/$token';
+  /// Includes code as query param if available for easier manual entry
+  String get inviteLink {
+    final base = 'https://highwoods.app/invite/$token';
+    if (code != null) {
+      return '$base?code=$code';
+    }
+    return base;
+  }
 
   /// Get display text for who the invitation was sent to
   String get recipientDisplay => email ?? 'Shared via link';

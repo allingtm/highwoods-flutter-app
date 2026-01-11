@@ -18,6 +18,7 @@ import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
 import '../../screens/directory/promo_detail_screen.dart';
 import '../../screens/whatson/event_detail_screen.dart';
+import '../../screens/settings_screen.dart';
 import '../../providers/auth_provider.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
@@ -29,9 +30,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final location = state.matchedLocation;
 
       final isGoingToAuth = location == '/login' ||
-          location == '/register' ||
+          location.startsWith('/register') ||
           location == '/';
       final isAuthCallback = location.startsWith('/auth/');
+      final isInviteLink = location.startsWith('/invite/');
 
       // Public routes that don't require authentication
       // Note: /post/:id/edit is protected, so we check it's not an edit route
@@ -40,8 +42,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           location == '/search' ||
           location.startsWith('/post/')) && !isEditRoute;
 
-      // Allow auth callback routes without authentication
-      if (isAuthCallback) {
+      // Allow auth callback routes and invite links without authentication
+      if (isAuthCallback || isInviteLink) {
         return null;
       }
 
@@ -84,7 +86,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/register',
         name: 'register',
-        builder: (context, state) => const RegisterScreen(),
+        builder: (context, state) {
+          // Read optional invite code from query parameter
+          final inviteCode = state.uri.queryParameters['code'];
+          return RegisterScreen(inviteCode: inviteCode);
+        },
+      ),
+      // Invite deep link - redirect to register with code
+      GoRoute(
+        path: '/invite/:token',
+        name: 'invite-link',
+        redirect: (context, state) {
+          final token = state.pathParameters['token'];
+          final code = state.uri.queryParameters['code'];
+          // Prefer the short code if available, otherwise use the token
+          final inviteCode = code ?? token;
+          return '/register?code=$inviteCode';
+        },
       ),
       GoRoute(
         path: '/home',
@@ -133,6 +151,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
         path: '/auth/confirm',

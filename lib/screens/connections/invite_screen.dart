@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -192,40 +193,111 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               itemBuilder: (context, index) {
                 final invitation = list[index];
                 return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: _getStatusColor(invitation.status.name, colorScheme),
-                      child: Icon(
-                        _getStatusIcon(invitation.status.name),
-                        color: colorScheme.onPrimary,
-                        size: tokens.iconSm,
-                      ),
-                    ),
-                    title: Text(invitation.recipientDisplay),
-                    subtitle: Text(
-                      '${invitation.status.name.toUpperCase()} - ${_formatDate(invitation.createdAt)}',
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
-                      ),
-                    ),
-                    trailing: invitation.isPending
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.share, color: colorScheme.primary),
-                                onPressed: () => _reshareInvitation(invitation.inviteLink, invitation.message),
-                                tooltip: 'Share again',
+                  child: Padding(
+                    padding: EdgeInsets.all(tokens.spacingMd),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Status row
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: _getStatusColor(invitation.status.name, colorScheme),
+                              child: Icon(
+                                _getStatusIcon(invitation.status.name),
+                                color: colorScheme.onPrimary,
+                                size: 16,
                               ),
-                              IconButton(
-                                icon: Icon(Icons.close, color: colorScheme.error),
+                            ),
+                            SizedBox(width: tokens.spacingSm),
+                            Text(
+                              invitation.status.name.toUpperCase(),
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: _getStatusColor(invitation.status.name, colorScheme),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              _formatDate(invitation.createdAt),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        // Invite code display
+                        if (invitation.code != null) ...[
+                          SizedBox(height: tokens.spacingMd),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: tokens.spacingMd,
+                              vertical: tokens.spacingSm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(tokens.radiusMd),
+                              border: Border.all(
+                                color: colorScheme.primary.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Code: ',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                                Text(
+                                  invitation.code!,
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: 'monospace',
+                                        letterSpacing: 2,
+                                        color: colorScheme.primary,
+                                      ),
+                                ),
+                                SizedBox(width: tokens.spacingSm),
+                                IconButton(
+                                  icon: Icon(Icons.copy, size: 18, color: colorScheme.primary),
+                                  onPressed: () => _copyCode(invitation.code!),
+                                  tooltip: 'Copy code',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                        // Action buttons for pending invitations
+                        if (invitation.isPending) ...[
+                          SizedBox(height: tokens.spacingMd),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton.icon(
+                                icon: const Icon(Icons.share, size: 18),
+                                label: const Text('Share'),
+                                onPressed: () => _reshareInvitation(
+                                  invitation.inviteLink,
+                                  invitation.message,
+                                  invitation.code,
+                                ),
+                              ),
+                              SizedBox(width: tokens.spacingSm),
+                              TextButton.icon(
+                                icon: Icon(Icons.close, size: 18, color: colorScheme.error),
+                                label: Text('Cancel', style: TextStyle(color: colorScheme.error)),
                                 onPressed: () => _cancelInvitation(invitation.id),
-                                tooltip: 'Cancel',
                               ),
                             ],
-                          )
-                        : null,
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
                 );
               },
@@ -273,7 +345,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  String _buildShareMessage(String inviteLink, String? personalMessage) {
+  String _buildShareMessage(String inviteLink, String? personalMessage, [String? code]) {
     final buffer = StringBuffer();
     buffer.writeln("Hey! I'd like to invite you to join the Highwoods community app.");
     buffer.writeln();
@@ -284,6 +356,11 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     }
 
     buffer.writeln('Join here: $inviteLink');
+
+    if (code != null) {
+      buffer.writeln();
+      buffer.writeln('Or enter this invite code: $code');
+    }
 
     return buffer.toString();
   }
@@ -304,6 +381,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       final shareText = _buildShareMessage(
         invitation.inviteLink,
         invitation.message,
+        invitation.code,
       );
 
       // Open native share sheet
@@ -331,12 +409,19 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     }
   }
 
-  Future<void> _reshareInvitation(String inviteLink, String? personalMessage) async {
-    final shareText = _buildShareMessage(inviteLink, personalMessage);
+  Future<void> _reshareInvitation(String inviteLink, String? personalMessage, String? code) async {
+    final shareText = _buildShareMessage(inviteLink, personalMessage, code);
 
     await Share.share(
       shareText,
       subject: 'Join the Highwoods Community',
+    );
+  }
+
+  void _copyCode(String code) {
+    Clipboard.setData(ClipboardData(text: code));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Code "$code" copied to clipboard')),
     );
   }
 
