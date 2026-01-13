@@ -8,7 +8,7 @@ workflows:
     environment:
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.solvewithsoftware.highwoods
+        bundle_identifier: com.solvewithsoftware.highwoods, com.solvewithsoftware.highwoods.OneSignalNotificationServiceExtension
       flutter: stable
       xcode: latest
       cocoapods: default
