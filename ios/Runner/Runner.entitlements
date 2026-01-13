@@ -8,5 +8,9 @@
 	<array>
 		<string>applinks:app.highwoods.co.uk</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.solvewithsoftware.highwoods.onesignal</string>
+	</array>
 </dict>
 </plist>
