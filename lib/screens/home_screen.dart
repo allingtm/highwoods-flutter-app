@@ -300,7 +300,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       margin: EdgeInsets.only(
         left: tokens.spacingLg,
         right: tokens.spacingLg,
-        bottom: tokens.spacingLg,
+        bottom: tokens.spacingMd + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -313,22 +313,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacingSm,
-            vertical: tokens.spacingMd,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(context, icon: Icons.forum_outlined, selectedIcon: Icons.forum, label: 'Feed', index: 0),
-              _buildNavItem(context, icon: Icons.menu_book_outlined, selectedIcon: Icons.menu_book, label: 'Directory', index: 1),
-              _buildNavItem(context, icon: Icons.event_outlined, selectedIcon: Icons.event, label: "What's On", index: 2),
-              _buildNavItem(context, icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Connections', index: 3),
-            ],
-          ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacingSm,
+          vertical: tokens.spacingXs,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(context, icon: Icons.forum_outlined, selectedIcon: Icons.forum, label: 'Social', index: 0),
+            _buildNavItem(context, icon: Icons.menu_book_outlined, selectedIcon: Icons.menu_book, label: 'Business', index: 1),
+            _buildNavItem(context, icon: Icons.event_outlined, selectedIcon: Icons.event, label: 'Calendar', index: 2),
+            _buildNavItem(context, icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Network', index: 3),
+          ],
         ),
       ),
     );
@@ -345,28 +342,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final isSelected = _selectedIndex == index;
 
-    return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacingMd,
-          vertical: tokens.spacingSm,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colorScheme.primary.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(tokens.radiusLg),
-        ),
-        child: AnimatedSwitcher(
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedIndex = index),
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          child: Icon(
-            isSelected ? selectedIcon : icon,
-            key: ValueKey(isSelected),
-            color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-            size: tokens.iconSm,
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacingXs,
+            vertical: tokens.spacingXs,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? colorScheme.primary.withValues(alpha: 0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Icon(
+                  isSelected ? selectedIcon : icon,
+                  key: ValueKey(isSelected),
+                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                  size: tokens.iconMd,
+                ),
+              ),
+              SizedBox(height: tokens.spacingXs),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
         ),
       ),
