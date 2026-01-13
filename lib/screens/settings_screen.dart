@@ -135,6 +135,7 @@ class SettingsScreen extends ConsumerWidget {
     AppThemeTokens tokens,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final hasPermission = ref.watch(notificationPermissionProvider);
 
     return Card(
       elevation: 0,
@@ -145,20 +146,20 @@ class SettingsScreen extends ConsumerWidget {
       child: Column(
         children: [
           // Enable notifications button (if not enabled)
-          if (!NotificationService.hasPermission)
+          if (!hasPermission)
             ListTile(
               leading: Icon(Icons.notifications_off, color: colorScheme.error),
               title: const Text('Notifications Disabled'),
               subtitle: const Text('Tap to enable push notifications'),
               trailing: FilledButton(
                 onPressed: () async {
-                  await NotificationService.requestPermission();
-                  ref.invalidate(notificationPermissionProvider);
+                  final granted = await NotificationService.requestPermission();
+                  ref.read(notificationPermissionProvider.notifier).state = granted;
                 },
                 child: const Text('Enable'),
               ),
             ),
-          if (!NotificationService.hasPermission) const Divider(height: 1),
+          if (!hasPermission) const Divider(height: 1),
           _buildNotificationToggle(
             context,
             ref,
