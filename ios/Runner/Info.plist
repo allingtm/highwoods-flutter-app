@@ -59,5 +59,7 @@
 		<string>Select photos from your library to share in community posts</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Save community photos and event images to your photo library</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Your location is used to provide location-based notifications and community content relevant to your area</string>
 	</dict>
 </plist>
