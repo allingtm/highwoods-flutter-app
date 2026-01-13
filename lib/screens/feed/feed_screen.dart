@@ -90,7 +90,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                       tooltip: 'Open menu',
                     )
                   : null,
-              title: Text(selectedCategory?.displayName ?? 'Community'),
+              title: const Text('Community'),
               actions: [
                 if (isAuthenticated)
                   IconButton(
