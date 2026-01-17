@@ -418,7 +418,10 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       // Get the updated post with images
       final postWithImages = uploadedImages != null
-          ? post.copyWith(images: uploadedImages)
+          ? post.copyWith(
+              images: uploadedImages,
+              primaryImageUrl: uploadedImages.isNotEmpty ? uploadedImages.first.url : null,
+            )
           : post;
 
       // Add to feed

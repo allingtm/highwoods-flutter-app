@@ -35,96 +35,111 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
     try {
       // Get the incoming URI using app_links
       final appLinks = AppLinks();
-      final uri = await appLinks.getInitialLink();
 
-      if (uri != null) {
-        // Extract profile data from query parameters (if present - registration flow)
-        final username = uri.queryParameters['username'];
-        final firstName = uri.queryParameters['firstName'];
-        final lastName = uri.queryParameters['lastName'];
+      // Try to get the initial link (for cold start)
+      Uri? uri = await appLinks.getInitialLink();
 
-        // Process the authentication URI with Supabase
-        await Supabase.instance.client.auth.getSessionFromUrl(uri);
+      // If no initial link, wait for a link via the stream (for warm/hot start)
+      if (uri == null) {
+        try {
+          uri = await appLinks.uriLinkStream.first.timeout(
+            const Duration(seconds: 3),
+          );
+        } catch (e) {
+          // Timeout waiting for link
+          if (mounted) {
+            setState(() {
+              _errorMessage = 'No authentication link received.';
+              _isProcessing = false;
+            });
+          }
+          return;
+        }
+      }
 
-        if (mounted) {
-          // Wait a moment for the auth state to propagate
-          await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
 
-          // Verify the user is actually logged in
-          final user = Supabase.instance.client.auth.currentUser;
+      // Debug: Print the received URI
+      debugPrint('📱 Received deep link URI: $uri');
+      debugPrint('📱 URI host: ${uri.host}');
+      debugPrint('📱 URI path: ${uri.path}');
+      debugPrint('📱 URI query params: ${uri.queryParameters}');
 
-          if (user != null) {
-            // Check if profile exists
-            final authRepository = ref.read(authRepositoryProvider);
-            final profile = await authRepository.getUserProfile(user.id);
+      // Extract profile data from query parameters (if present - registration flow)
+      final username = uri.queryParameters['username'];
+      final firstName = uri.queryParameters['firstName'];
+      final lastName = uri.queryParameters['lastName'];
 
-            if (profile == null) {
-              // No profile exists
-              if (username != null && firstName != null && lastName != null) {
-                // Registration flow - create profile with data from URL
-                try {
-                  await authRepository.createUserProfile(
-                    userId: user.id,
-                    email: user.email ?? '',
-                    username: username,
-                    firstName: firstName,
-                    lastName: lastName,
-                  );
+      // Process the authentication URI with Supabase
+      debugPrint('📱 Processing auth with Supabase...');
+      await Supabase.instance.client.auth.getSessionFromUrl(uri);
+      debugPrint('📱 Supabase processing complete');
 
-                  // Profile created successfully, navigate to home
-                  if (mounted) {
-                    // Request notification permission for new users with rationale
-                    await NotificationService.requestPermissionWithRationale(context);
+      if (!mounted) return;
 
-                    if (mounted) {
-                      context.go('/home');
-                    }
-                  }
-                } catch (e) {
-                  setState(() {
-                    _errorMessage = 'Failed to create profile: ${getErrorMessage(e)}';
-                    _isProcessing = false;
-                  });
+      // Wait a moment for the auth state to propagate
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Verify the user is actually logged in
+      final user = Supabase.instance.client.auth.currentUser;
+
+      if (user != null) {
+        // Check if profile exists
+        final authRepository = ref.read(authRepositoryProvider);
+        final profile = await authRepository.getUserProfile(user.id);
+
+        if (profile == null) {
+          // No profile exists
+          if (username != null && firstName != null && lastName != null) {
+            // Registration flow - create profile with data from URL
+            try {
+              await authRepository.createUserProfile(
+                userId: user.id,
+                email: user.email ?? '',
+                username: username,
+                firstName: firstName,
+                lastName: lastName,
+              );
+
+              // Profile created successfully, navigate to home
+              if (mounted) {
+                // Request notification permission for new users with rationale
+                await NotificationService.requestPermissionWithRationale(context);
+
+                if (mounted) {
+                  context.go('/home');
                 }
-              } else {
-                // Login flow but no profile exists - shouldn't happen for existing users
+              }
+            } catch (e) {
+              if (mounted) {
                 setState(() {
-                  _errorMessage = 'Account not found. Please register first.';
+                  _errorMessage = 'Failed to create profile: ${getErrorMessage(e)}';
                   _isProcessing = false;
                 });
               }
-            } else {
-              // Profile exists, navigate to home
-              if (mounted) {
-                context.go('/home');
-              }
             }
           } else {
-            setState(() {
-              _errorMessage = 'Authentication failed. Session not established.';
-              _isProcessing = false;
-            });
+            // Login flow but no profile exists - shouldn't happen for existing users
+            if (mounted) {
+              setState(() {
+                _errorMessage = 'Account not found. Please register first.';
+                _isProcessing = false;
+              });
+            }
           }
-        } else if (mounted) {
-          setState(() {
-            _errorMessage = 'Authentication failed. Please try again.';
-            _isProcessing = false;
-          });
+        } else {
+          // Profile exists, navigate to home
+          if (mounted) {
+            context.go('/home');
+          }
         }
       } else {
-        // No URI found, check if already authenticated
-        await Future.delayed(const Duration(milliseconds: 500));
-        final user = Supabase.instance.client.auth.currentUser;
-
+        // Not authenticated after waiting
         if (mounted) {
-          if (user != null) {
-            context.go('/home');
-          } else {
-            setState(() {
-              _errorMessage = 'No authentication link found.';
-              _isProcessing = false;
-            });
-          }
+          setState(() {
+            _errorMessage = 'Authentication failed. Session not established.';
+            _isProcessing = false;
+          });
         }
       }
     } catch (e) {

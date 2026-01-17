@@ -91,12 +91,40 @@ class _FilterChip extends StatelessWidget {
                 ? Border.all(color: effectiveColor, width: 1.5)
                 : null,
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: isSelected
-                ? effectiveColor
-                : theme.colorScheme.onSurfaceVariant,
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: 18,
+                  color: isSelected
+                      ? effectiveColor
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+                AnimatedOpacity(
+                  duration: const Duration(milliseconds: 250),
+                  opacity: isSelected ? 1.0 : 0.0,
+                  child: isSelected
+                      ? Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(width: tokens.spacingSm),
+                            Text(
+                              label,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: effectiveColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
           ),
         ),
       ),

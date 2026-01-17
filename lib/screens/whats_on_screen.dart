@@ -53,6 +53,7 @@ class _WhatsOnScreenState extends ConsumerState<WhatsOnScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: () => _showSuggestEventSheet(context, tokens, colorScheme),
         icon: const Icon(Icons.add),
         label: const Text('Suggest Event'),

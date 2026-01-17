@@ -69,46 +69,49 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
           top: Radius.circular(tokens.radiusXl),
         ),
       ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(tokens.spacingLg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Add Photo',
-                style: AppTypography.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: tokens.spacingLg),
-              _SourceOption(
-                icon: Icons.camera_alt_outlined,
-                label: 'Take Photo',
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              SizedBox(height: tokens.spacingSm),
-              _SourceOption(
-                icon: Icons.photo_library_outlined,
-                label: 'Choose from Gallery',
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-              SizedBox(height: tokens.spacingSm),
-              _SourceOption(
-                icon: Icons.photo_library,
-                label: 'Choose Multiple',
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickMultipleImages();
-                },
-              ),
-            ],
+      builder: (context) => HeroMode(
+        enabled: false,
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacingLg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Add Photo',
+                  style: AppTypography.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: tokens.spacingLg),
+                _SourceOption(
+                  icon: Icons.camera_alt_outlined,
+                  label: 'Take Photo',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                SizedBox(height: tokens.spacingSm),
+                _SourceOption(
+                  icon: Icons.photo_library_outlined,
+                  label: 'Choose from Gallery',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+                SizedBox(height: tokens.spacingSm),
+                _SourceOption(
+                  icon: Icons.photo_library,
+                  label: 'Choose Multiple',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickMultipleImages();
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

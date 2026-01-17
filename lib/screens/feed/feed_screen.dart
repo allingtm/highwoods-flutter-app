@@ -90,7 +90,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                       tooltip: 'Open menu',
                     )
                   : null,
-              title: Text(selectedCategory?.displayName ?? 'Community'),
+              title: const Text('Community'),
               actions: [
                 if (isAuthenticated)
                   IconButton(
@@ -200,12 +200,14 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       // New posts indicator (uses _scrollToTop when real-time updates are enabled)
       floatingActionButton: _newPostsCount > 0
           ? FloatingActionButton.extended(
+              heroTag: null,
               onPressed: _scrollToTop,
               icon: const Icon(Icons.arrow_upward_rounded),
               label: Text('$_newPostsCount new'),
             )
           : (isAuthenticated
               ? FloatingActionButton.extended(
+                  heroTag: null,
                   onPressed: () => context.push(
                       '/create-post${selectedCategory != null ? '?category=${selectedCategory.dbValue}' : ''}'),
                   icon: const Icon(Icons.add_rounded),
