@@ -107,7 +107,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) {
+          // Support tab query parameter for notification deep linking
+          final tabStr = state.uri.queryParameters['tab'];
+          final initialTab = tabStr != null ? int.tryParse(tabStr) ?? 0 : 0;
+          return HomeScreen(initialTab: initialTab);
+        },
       ),
       GoRoute(
         path: '/feed',
