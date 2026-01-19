@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/feed/feed_models.dart';
+import '../../models/post_category.dart';
+import '../../models/post_status.dart';
+import '../../models/post_type.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -126,7 +129,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Post content
-                        _PostContent(post: post),
+                        _PostContent(
+                          post: post,
+                          onMessageAuthor: () => _handleMessageAuthor(post),
+                        ),
 
                         SizedBox(height: tokens.spacingXl),
 
@@ -486,18 +492,67 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       ),
     );
   }
+
+  void _handleMessageAuthor(Post post) {
+    final isAuthenticated = ref.read(isAuthenticatedProvider);
+    if (!isAuthenticated) {
+      _showLoginPrompt();
+      return;
+    }
+
+    // Check if post is still active
+    if (post.status != PostStatus.active) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This post is no longer available for messages'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Show the message composer
+    showPostMessageComposer(
+      context,
+      post: post,
+    );
+  }
 }
 
 /// Post content widget
-class _PostContent extends StatelessWidget {
-  const _PostContent({required this.post});
+class _PostContent extends ConsumerWidget {
+  const _PostContent({
+    required this.post,
+    required this.onMessageAuthor,
+  });
 
   final Post post;
+  final VoidCallback onMessageAuthor;
+
+  /// Determines if the message author button should be shown for this post type
+  bool _shouldShowMessageButton() {
+    // Exclude safety posts (broadcast only, could be dangerous to contact reporter)
+    if (post.category == PostCategory.safety) return false;
+
+    // Exclude discussion posts (use comments instead)
+    if (post.postType == PostType.discussion) return false;
+
+    // Exclude recommendation posts about businesses (informational only)
+    if (post.postType == PostType.recTrades) return false;
+    if (post.postType == PostType.recLifestyle) return false;
+
+    // Exclude events (use RSVP instead)
+    if (post.postType == PostType.event) return false;
+
+    return true;
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
     final theme = Theme.of(context);
+    final currentUser = ref.watch(currentUserProvider);
+    final isOwnPost = currentUser?.id == post.userId;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -554,6 +609,15 @@ class _PostContent extends StatelessWidget {
             ),
           ],
         ),
+
+        // Message Author button (shown for applicable post types, not own posts)
+        if (_shouldShowMessageButton() && !isOwnPost) ...[
+          SizedBox(height: tokens.spacingMd),
+          MessageAuthorButton(
+            post: post,
+            onTap: onMessageAuthor,
+          ),
+        ],
 
         SizedBox(height: tokens.spacingLg),
 

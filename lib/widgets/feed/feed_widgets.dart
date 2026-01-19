@@ -8,3 +8,5 @@ export 'new_posts_pill.dart';
 export 'comment_item.dart';
 export 'image_picker_widget.dart';
 export 'threaded_comment_list.dart';
+export 'message_author_button.dart';
+export 'post_message_composer.dart';

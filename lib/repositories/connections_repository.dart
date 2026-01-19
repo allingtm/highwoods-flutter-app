@@ -575,10 +575,15 @@ class ConnectionsRepository {
     }
   }
 
-  /// Sends a message to another user (must be connected)
+  /// Sends a message to another user.
+  ///
+  /// If [postId] is provided, allows messaging post authors without requiring
+  /// a connection (for marketplace, jobs, lost & found inquiries).
+  /// Otherwise, users must be connected to message each other.
   Future<Message> sendMessage({
     required String recipientId,
     required String content,
+    String? postId,
   }) async {
     try {
       final userId = _currentUserId;
@@ -596,6 +601,7 @@ class ConnectionsRepository {
             'sender_id': userId,
             'recipient_id': recipientId,
             'content': content.trim(),
+            if (postId != null) 'post_id': postId,
           })
           .select('''
             *,
