@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/config/supabase_config.dart';
+import 'core/deep_link_handler.dart';
 import 'core/router/app_router.dart';
 import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
@@ -41,28 +42,44 @@ class _MainAppState extends ConsumerState<MainApp> {
   final GlobalKey<ScaffoldMessengerState> _scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
 
+  /// Deep link handler for app links
+  DeepLinkHandler? _deepLinkHandler;
+
   @override
   void initState() {
     super.initState();
     // Listen for foreground notifications to show as snackbar
-    NotificationNavigationService.instance.addListener(_onForegroundNotification);
+    NotificationNavigationService.instance
+        .addListener(_onForegroundNotification);
 
     // Register router after first frame (when router is available)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _registerRouter();
+      _registerRouterAndDeepLinks();
     });
   }
 
   @override
   void dispose() {
-    NotificationNavigationService.instance.removeListener(_onForegroundNotification);
+    NotificationNavigationService.instance
+        .removeListener(_onForegroundNotification);
+    _deepLinkHandler?.dispose();
     super.dispose();
   }
 
-  /// Register the router with NotificationNavigationService for cold start support
-  void _registerRouter() {
+  /// Register the router with NotificationNavigationService and init deep link handler
+  void _registerRouterAndDeepLinks() {
+    // Register router getter FIRST - this enables notification navigation
+    // IMPORTANT: Pass a function that reads the router fresh each time, because
+    // the router can be recreated when auth state changes (due to ref.watch)
+    NotificationNavigationService.instance
+        .registerRouter(() => ref.read(goRouterProvider));
+
+    // Then init deep link handler - this listens for app links
+    // IMPORTANT: Must be after router registration so notification navigation
+    // takes priority over app links (prevents race condition)
     final router = ref.read(goRouterProvider);
-    NotificationNavigationService.instance.registerRouter(() => router);
+    _deepLinkHandler = DeepLinkHandler(router);
+    _deepLinkHandler!.init();
   }
 
   /// Show foreground notification as in-app snackbar

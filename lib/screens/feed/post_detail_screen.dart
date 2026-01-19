@@ -33,6 +33,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     super.dispose();
   }
 
+  /// Handle back navigation - go to home if nothing to pop (deep link case)
+  void _handleBack(BuildContext context) {
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+    } else {
+      context.go('/home');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
@@ -64,6 +73,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => _handleBack(context),
+        ),
         title: const Text('Post'),
         actions: [
           IconButton(
@@ -91,7 +104,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   ),
                   SizedBox(height: tokens.spacingXl),
                   FilledButton(
-                    onPressed: () => context.pop(),
+                    onPressed: () => _handleBack(context),
                     child: const Text('Go back'),
                   ),
                 ],

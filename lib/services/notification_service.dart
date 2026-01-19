@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'notification_navigation_service.dart';
 
 /// Service for managing push notifications via OneSignal
@@ -74,10 +75,29 @@ class NotificationService {
   /// Check if notifications are enabled
   static bool get hasPermission => OneSignal.Notifications.permission;
 
-  /// Set external user ID for targeting
+  /// Set external user ID for targeting and save player ID to Supabase
   /// Call this after user logs in
   static Future<void> setExternalUserId(String userId) async {
     await OneSignal.login(userId);
+
+    // Save OneSignal player ID to Supabase for server-side notifications
+    await _savePlayerIdToSupabase(userId);
+  }
+
+  /// Save the OneSignal player ID to the user's profile in Supabase
+  static Future<void> _savePlayerIdToSupabase(String userId) async {
+    try {
+      final playerId = OneSignal.User.pushSubscription.id;
+      if (playerId != null && playerId.isNotEmpty) {
+        await Supabase.instance.client
+            .from('profiles')
+            .update({'onesignal_player_id': playerId})
+            .eq('id', userId);
+        debugPrint('NotificationService: Saved player ID to Supabase');
+      }
+    } catch (e) {
+      debugPrint('NotificationService: Failed to save player ID: $e');
+    }
   }
 
   /// Set user tags for targeted notifications
@@ -122,6 +142,7 @@ class NotificationService {
   /// Handle notification click - delegates to NotificationNavigationService
   static void _onNotificationClick(OSNotificationClickEvent event) {
     debugPrint('NotificationService: Notification clicked');
+    debugPrint('NotificationService: additionalData = ${event.notification.additionalData}');
     NotificationNavigationService.instance.handleNotificationClick(
       event.notification.additionalData,
     );

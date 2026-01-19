@@ -115,16 +115,17 @@ class NotificationNavigationService extends ChangeNotifier {
     _pendingRoute = mappedPath;
     _navigationConsumed = false;
 
-    // Microtask: Attempt navigation if router is available (warm start / foreground)
-    Future.microtask(() {
-      if (!_navigationConsumed && _getRouter != null) {
-        _navigationConsumed = true;
-        debugPrint('NotificationNavigationService: Microtask navigation to $mappedPath');
-        _getRouter!().go(mappedPath);
-        _pendingRoute = null;
-        _navigationCompletedAt = DateTime.now();
-      }
-    });
+    // For warm start (app already running), navigate immediately
+    // For cold start, the router redirect will pick up the pending route
+    if (_getRouter != null) {
+      _navigationConsumed = true;
+      debugPrint('NotificationNavigationService: Immediate navigation to $mappedPath');
+      _getRouter!().go(mappedPath);
+      _pendingRoute = null;
+      _navigationCompletedAt = DateTime.now();
+    } else {
+      debugPrint('NotificationNavigationService: Router not ready, storing pending route: $mappedPath');
+    }
   }
 
   /// Consume and return the pending route
@@ -178,9 +179,14 @@ class NotificationNavigationService extends ChangeNotifier {
     String? targetId,
     String? deepLinkPath,
   }) {
+    debugPrint('NotificationNavigationService: _mapDeepLinkToRoute called');
+    debugPrint('  type=$type, targetId=$targetId, deepLinkPath=$deepLinkPath');
+
     // If a direct deep link path is provided, use it
     if (deepLinkPath != null && deepLinkPath.isNotEmpty) {
-      return _mapPathToRoute(deepLinkPath);
+      final result = _mapPathToRoute(deepLinkPath);
+      debugPrint('  Using deep_link_path, mapped to: $result');
+      return result;
     }
 
     // Otherwise, map based on type and target_id

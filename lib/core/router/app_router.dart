@@ -20,6 +20,7 @@ import '../../screens/directory/promo_detail_screen.dart';
 import '../../screens/whatson/event_detail_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/notification_navigation_service.dart';
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
@@ -28,6 +29,17 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final isAuth = isAuthenticated;
       final location = state.matchedLocation;
+
+      // CRITICAL: Check for pending notification route (cold start fallback)
+      // This handles the case where a notification is tapped before the router
+      // was registered, or the microtask navigation failed to win the race
+      final pendingRoute =
+          NotificationNavigationService.instance.consumePendingRoute();
+      if (pendingRoute != null) {
+        debugPrint(
+            'Router redirect: Consuming pending notification route: $pendingRoute');
+        return pendingRoute;
+      }
 
       final isGoingToAuth = location == '/login' ||
           location.startsWith('/register') ||
