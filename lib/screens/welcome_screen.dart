@@ -15,10 +15,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   int _currentPage = 0;
 
   static const _benefits = [
-    (Icons.people_outline, 'Connect', 'Meet and chat with your neighbors'),
-    (Icons.storefront_outlined, 'Marketplace', 'Buy & sell items locally'),
-    (Icons.event_outlined, 'Events', 'Discover community events'),
-    (Icons.pets_outlined, 'Lost & Found', 'Help reunite lost pets'),
+    (Icons.storefront_outlined, 'Marketplace', 'Buy, sell & give away locally — pickup is streets away'),
+    (Icons.thumb_up_outlined, 'Recommendations', 'Get trusted advice from neighbours who\'ve used local services'),
+    (Icons.shield_outlined, 'Safety Alerts', 'Hear about incidents on your streets when they happen'),
+    (Icons.pets_outlined, 'Lost & Found', 'Reach people who actually walk past your street daily'),
+    (Icons.event_outlined, 'Events', 'Discover local events, RSVP and see who\'s going'),
+    (Icons.work_outline, 'Local Jobs', 'Find nearby help or offer your skills — no platform fees'),
   ];
 
   @override

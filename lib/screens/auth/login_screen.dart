@@ -71,7 +71,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Center(
                   child: Image.asset(
                     'assets/images/logo.png',
-                    width: 80,
+                    width: 180,
                   ),
                 ),
                 SizedBox(height: tokens.spacingXl),

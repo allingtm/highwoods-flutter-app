@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:form_field_validator/form_field_validator.dart';
@@ -153,7 +152,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Center(
                   child: Image.asset(
                     'assets/images/logo.png',
-                    width: 80,
+                    width: 180,
                   ),
                 ),
                 SizedBox(height: tokens.spacingXl),
@@ -341,7 +340,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             Container(
               padding: EdgeInsets.all(tokens.spacingMd),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(tokens.radiusMd),
               ),
               child: Row(
