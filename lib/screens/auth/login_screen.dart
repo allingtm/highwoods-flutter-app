@@ -57,6 +57,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'),
+        ),
         title: const Text('Login'),
       ),
       body: SafeArea(
@@ -70,8 +74,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 SizedBox(height: tokens.spacingLg),
                 Center(
                   child: Image.asset(
-                    'assets/images/logo.png',
-                    width: 180,
+                    'assets/images/splash_logo.png',
+                    width: 200,
                   ),
                 ),
                 SizedBox(height: tokens.spacingXl),

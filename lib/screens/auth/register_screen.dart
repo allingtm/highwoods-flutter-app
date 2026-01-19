@@ -138,6 +138,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/'),
+        ),
         title: const Text('Register'),
       ),
       body: SafeArea(
@@ -151,8 +155,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 SizedBox(height: tokens.spacingLg),
                 Center(
                   child: Image.asset(
-                    'assets/images/logo.png',
-                    width: 180,
+                    'assets/images/splash_logo.png',
+                    width: 200,
                   ),
                 ),
                 SizedBox(height: tokens.spacingXl),
@@ -206,28 +210,48 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Widget _buildCodeEntryStep(AppThemeTokens tokens) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppInfoContainer(
-          icon: Icons.lock_outline,
+        // Invitation Only card with border (no background)
+        Container(
+          padding: EdgeInsets.all(tokens.spacingLg),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: colorScheme.outline,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
+          ),
           child: Column(
             children: [
+              Icon(
+                Icons.lock_outline,
+                size: tokens.iconLg,
+                color: colorScheme.primary,
+              ),
+              SizedBox(height: tokens.spacingMd),
               Text(
                 'Invitation Only',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
               ),
               SizedBox(height: tokens.spacingSm),
-              const Text(
+              Text(
                 'Highwoods is an invitation-only community. Enter the invite code you received, or ask someone you know with an account to send you an invitation.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
-        SizedBox(height: tokens.spacingXl),
+        SizedBox(height: tokens.spacing2xl),
+        // Invite code input below the card
         TextFormField(
           controller: _codeController,
           textCapitalization: TextCapitalization.characters,
