@@ -8,8 +8,7 @@ import 'core/router/app_router.dart';
 import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
 import 'services/notification_navigation_service.dart';
-import 'theme/app_theme.dart';
-import 'theme/app_colors.dart';
+import 'theme/app_color_palette.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,7 +107,7 @@ class _MainAppState extends ConsumerState<MainApp> {
         ),
         duration: const Duration(seconds: 5),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.brandPrimary,
+        backgroundColor: context.colors.primary,
         action: notification.additionalData != null
             ? SnackBarAction(
                 label: 'View',
@@ -126,14 +125,14 @@ class _MainAppState extends ConsumerState<MainApp> {
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(goRouterProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final theme = ref.watch(themeDataProvider);
 
     return MaterialApp.router(
       title: 'Highwoods',
       scaffoldMessengerKey: _scaffoldMessengerKey,
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: themeMode,
+      theme: theme,
+      themeAnimationDuration: const Duration(milliseconds: 300),
+      themeAnimationCurve: Curves.easeInOut,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

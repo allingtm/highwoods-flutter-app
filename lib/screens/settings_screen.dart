@@ -9,7 +9,8 @@ import '../providers/theme_provider.dart';
 import '../services/notification_service.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_theme_tokens.dart';
-import '../theme/app_colors.dart';
+import '../theme/app_color_palette.dart';
+import '../theme/app_palettes.dart';
 
 /// Settings screen with theme toggle and app info
 class SettingsScreen extends ConsumerWidget {
@@ -18,8 +19,9 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
+    final colors = context.colors;
     final colorScheme = Theme.of(context).colorScheme;
-    final currentThemeMode = ref.watch(themeModeProvider);
+    final currentThemeVariant = ref.watch(themeVariantProvider);
     final notificationPrefs = ref.watch(notificationPreferencesProvider);
 
     return Scaffold(
@@ -34,7 +36,7 @@ class SettingsScreen extends ConsumerWidget {
           // Appearance Section
           _buildSectionHeader(context, 'Appearance'),
           SizedBox(height: tokens.spacingSm),
-          _buildThemeSelector(context, ref, currentThemeMode, tokens),
+          _buildThemeSelector(context, ref, currentThemeVariant, tokens, colors),
 
           SizedBox(height: tokens.spacingXl),
 
@@ -112,6 +114,7 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title, {bool isDestructive = false}) {
     final tokens = context.tokens;
+    final colors = context.colors;
     return Padding(
       padding: EdgeInsets.only(left: tokens.spacingSm),
       child: Text(
@@ -122,7 +125,7 @@ class SettingsScreen extends ConsumerWidget {
           letterSpacing: 1.0,
           color: isDestructive
               ? Theme.of(context).colorScheme.error
-              : AppColors.secondaryText,
+              : colors.textSecondary,
         ),
       ),
     );
@@ -244,7 +247,7 @@ class SettingsScreen extends ConsumerWidget {
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       subtitle: Text(
         subtitle,
-        style: TextStyle(color: AppColors.secondaryText, fontSize: 12),
+        style: TextStyle(color: context.colors.textSecondary, fontSize: 12),
       ),
       value: value,
       onChanged: onChanged,
@@ -254,8 +257,9 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildThemeSelector(
     BuildContext context,
     WidgetRef ref,
-    ThemeMode currentMode,
+    ThemeVariant currentVariant,
     AppThemeTokens tokens,
+    AppColorPalette colors,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -288,36 +292,90 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
             SizedBox(height: tokens.spacingMd),
-            SegmentedButton<ThemeMode>(
-              segments: [
-                ButtonSegment(
-                  value: ThemeMode.system,
-                  icon: Icon(Icons.settings_brightness, size: 18),
-                  label: const Text('System'),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.light,
-                  icon: Icon(Icons.light_mode, size: 18),
-                  label: const Text('Light'),
-                ),
-                ButtonSegment(
-                  value: ThemeMode.dark,
-                  icon: Icon(Icons.dark_mode, size: 18),
-                  label: const Text('Dark'),
-                ),
-              ],
-              selected: {currentMode},
-              onSelectionChanged: (Set<ThemeMode> selected) {
-                ref.read(themeModeProvider.notifier).setThemeMode(selected.first);
-              },
-              style: ButtonStyle(
-                visualDensity: VisualDensity.compact,
-              ),
+            // Theme variant grid
+            Wrap(
+              spacing: tokens.spacingSm,
+              runSpacing: tokens.spacingSm,
+              children: ThemeVariant.values.map((variant) {
+                final isSelected = variant == currentVariant;
+                final previewColors = AppPalettes.getPreviewColors(variant);
+                final bgColor = previewColors[0];
+                final primaryColor = previewColors[1];
+
+                return GestureDetector(
+                  onTap: () {
+                    ref.read(themeVariantProvider.notifier).setThemeVariant(variant);
+                  },
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: bgColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? colors.primary : colors.border,
+                            width: isSelected ? 3 : 1,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: colors.primary.withValues(alpha: 0.3),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: isSelected
+                                ? Icon(
+                                    Icons.check,
+                                    color: _getCheckColor(primaryColor),
+                                    size: 14,
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: tokens.spacingXs),
+                      SizedBox(
+                        width: 56,
+                        child: Text(
+                          variant.displayName,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: isSelected ? colors.primary : colors.textMuted,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getCheckColor(Color backgroundColor) {
+    // Use white check for dark colors, dark check for light colors
+    final luminance = backgroundColor.computeLuminance();
+    return luminance > 0.5 ? const Color(0xFF1A1C1E) : Colors.white;
   }
 
   Widget _buildSettingsTile(
@@ -351,10 +409,10 @@ class SettingsScreen extends ConsumerWidget {
         subtitle: subtitle != null
             ? Text(
                 subtitle,
-                style: TextStyle(color: AppColors.secondaryText),
+                style: TextStyle(color: context.colors.textSecondary),
               )
             : null,
-        trailing: isDestructive ? null : Icon(Icons.chevron_right, color: AppColors.secondaryText),
+        trailing: isDestructive ? null : Icon(Icons.chevron_right, color: context.colors.textSecondary),
         onTap: onTap,
       ),
     );
@@ -386,7 +444,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
             trailing: Text(
               version,
-              style: TextStyle(color: AppColors.secondaryText),
+              style: TextStyle(color: context.colors.textSecondary),
             ),
           ),
         );
