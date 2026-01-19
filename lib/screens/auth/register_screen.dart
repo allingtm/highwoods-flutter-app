@@ -156,7 +156,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 Center(
                   child: Image.asset(
                     'assets/images/splash_logo.png',
-                    width: 200,
+                    width: MediaQuery.of(context).size.width * 0.8,
                   ),
                 ),
                 SizedBox(height: tokens.spacingXl),

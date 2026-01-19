@@ -33,51 +33,31 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final colorScheme = Theme.of(context).colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: Column(
         children: [
-          // Top section with colored background
+          // Top section - full bleed carousel with image, logo, and text
           Expanded(
-            flex: 3,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Column(
-                  children: [
-                    SizedBox(height: tokens.spacingLg),
-                    // Logo at top
-                    Image.asset(
-                      'assets/images/splash_logo.png',
-                      width: 160,
-                      color: Colors.white,
-                      colorBlendMode: BlendMode.srcIn,
-                    ),
-                    // Illustration carousel
-                    Expanded(
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: _benefits.length,
-                        onPageChanged: (index) => setState(() => _currentPage = index),
-                        itemBuilder: (context, index) {
-                          final (icon, imagePath, _, _) = _benefits[index];
-                          return _IllustrationCard(
-                            icon: icon,
-                            imagePath: imagePath,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            flex: 4,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _benefits.length,
+              onPageChanged: (index) => setState(() => _currentPage = index),
+              itemBuilder: (context, index) {
+                final (icon, imagePath, title, description) = _benefits[index];
+                return _OnboardingSlide(
+                  icon: icon,
+                  imagePath: imagePath,
+                  title: title,
+                  description: description,
+                  logoWidth: screenWidth * 0.8,
+                );
+              },
             ),
           ),
-          // Bottom section with white background
+          // Bottom section with white background - dots and button only
           Container(
             width: double.infinity,
             color: colorScheme.surface,
@@ -88,24 +68,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(height: tokens.spacing2xl),
-                    // Title
-                    Text(
-                      _benefits[_currentPage].$3,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: tokens.spacingMd),
-                    // Description
-                    Text(
-                      _benefits[_currentPage].$4,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
                     SizedBox(height: tokens.spacingXl),
                     // Dot indicators
                     Row(
@@ -144,35 +106,116 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 }
 
-class _IllustrationCard extends StatelessWidget {
-  const _IllustrationCard({
+class _OnboardingSlide extends StatelessWidget {
+  const _OnboardingSlide({
     required this.icon,
     required this.imagePath,
+    required this.title,
+    required this.description,
+    required this.logoWidth,
   });
 
   final IconData icon;
   final String imagePath;
+  final String title;
+  final String description;
+  final double logoWidth;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.tokens;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Image.asset(
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Background image - fills entire area
+        Image.asset(
           imagePath,
-          fit: BoxFit.contain,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
           errorBuilder: (context, error, stackTrace) {
-            // Fallback to icon if image not found
-            return Icon(
-              icon,
-              size: 150,
-              color: colorScheme.onPrimary.withValues(alpha: 0.8),
+            // Fallback to colored background with icon if image not found
+            return Container(
+              color: colorScheme.primary,
+              child: Center(
+                child: Icon(
+                  icon,
+                  size: 150,
+                  color: colorScheme.onPrimary.withValues(alpha: 0.8),
+                ),
+              ),
             );
           },
         ),
-      ),
+        // Gradient overlay for text readability at bottom
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 200,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.7),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // Logo at top
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.only(top: tokens.spacingLg),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/splash_logo.png',
+                  width: logoWidth,
+                  color: Colors.white,
+                  colorBlendMode: BlendMode.srcIn,
+                ),
+              ),
+            ),
+          ),
+        ),
+        // Title and description at bottom
+        Positioned(
+          left: tokens.spacingXl,
+          right: tokens.spacingXl,
+          bottom: tokens.spacingXl,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: tokens.spacingSm),
+              Text(
+                description,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
