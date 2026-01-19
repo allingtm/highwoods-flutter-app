@@ -135,6 +135,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -148,17 +149,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: tokens.spacingXl),
-                Icon(
-                  _isCodeValidated ? Icons.check_circle_outline : Icons.vpn_key_outlined,
-                  size: tokens.iconXl,
-                  color: Theme.of(context).colorScheme.primary,
+                SizedBox(height: tokens.spacingLg),
+                Center(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 80,
+                  ),
                 ),
                 SizedBox(height: tokens.spacingXl),
-                Text(
-                  _isCodeValidated ? 'Create your account' : 'Enter Invite Code',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      _isCodeValidated ? Icons.check_circle_outline : Icons.vpn_key_outlined,
+                      size: tokens.iconMd,
+                      color: colorScheme.primary,
+                    ),
+                    SizedBox(width: tokens.spacingMd),
+                    Text(
+                      _isCodeValidated ? 'Create your account' : 'Enter Invite Code',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ],
                 ),
                 SizedBox(height: tokens.spacingXl),
 

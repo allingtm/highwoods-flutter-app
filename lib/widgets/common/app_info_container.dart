@@ -19,7 +19,7 @@ class AppInfoContainer extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(tokens.spacingLg),
       decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
+        color: colorScheme.primaryContainer.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(tokens.radiusLg),
       ),
       child: Column(

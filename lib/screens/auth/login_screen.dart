@@ -53,6 +53,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -66,17 +67,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: tokens.spacingXl),
-                Icon(
-                  Icons.lock_outline,
-                  size: tokens.iconXl,
-                  color: Theme.of(context).colorScheme.primary,
+                SizedBox(height: tokens.spacingLg),
+                Center(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 80,
+                  ),
                 ),
                 SizedBox(height: tokens.spacingXl),
-                Text(
-                  'Sign in to your account',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      size: tokens.iconMd,
+                      color: colorScheme.primary,
+                    ),
+                    SizedBox(width: tokens.spacingMd),
+                    Text(
+                      'Sign in to your account',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ],
                 ),
                 SizedBox(height: tokens.spacing2xl),
                 if (!_magicLinkSent) ...[
