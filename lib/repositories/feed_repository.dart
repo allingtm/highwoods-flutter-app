@@ -493,6 +493,7 @@ class FeedRepository {
           .select('''
             *,
             profiles:author_id (
+              username,
               first_name,
               last_name,
               avatar_url
@@ -510,11 +511,13 @@ class FeedRepository {
         data['content'] = data['body'];
 
         if (profile != null) {
+          final username = profile['username'] as String?;
           final firstName = profile['first_name'] as String?;
           final lastName = profile['last_name'] as String?;
-          data['author_name'] = [firstName, lastName]
+          final fullName = [firstName, lastName]
               .where((s) => s != null && s.isNotEmpty)
               .join(' ');
+          data['author_name'] = fullName.isNotEmpty ? fullName : username;
           data['author_avatar_url'] = profile['avatar_url'];
         }
 
@@ -547,13 +550,33 @@ class FeedRepository {
             'body': content, // Database column is 'body', not 'content'
             'parent_id': parentId,
           })
-          .select()
+          .select('''
+            *,
+            profiles:author_id (
+              username,
+              first_name,
+              last_name,
+              avatar_url
+            )
+          ''')
           .single();
 
       // Map database column names to model field names
+      final profile = response['profiles'] as Map<String, dynamic>?;
       final data = Map<String, dynamic>.from(response);
       data['user_id'] = data['author_id'];
       data['content'] = data['body'];
+
+      if (profile != null) {
+        final username = profile['username'] as String?;
+        final firstName = profile['first_name'] as String?;
+        final lastName = profile['last_name'] as String?;
+        final fullName = [firstName, lastName]
+            .where((s) => s != null && s.isNotEmpty)
+            .join(' ');
+        data['author_name'] = fullName.isNotEmpty ? fullName : username;
+        data['author_avatar_url'] = profile['avatar_url'];
+      }
 
       return PostComment.fromJson(data);
     } on PostgrestException catch (e) {
@@ -988,8 +1011,40 @@ class FeedRepository {
             column: 'post_id',
             value: postId,
           ),
-          callback: (payload) {
-            final comment = PostComment.fromJson(payload.newRecord);
+          callback: (payload) async {
+            final commentId = payload.newRecord['id'] as String;
+            // Fetch the full comment with profile data
+            final response = await _supabase
+                .from('post_comments')
+                .select('''
+                  *,
+                  profiles:author_id (
+                    username,
+                    first_name,
+                    last_name,
+                    avatar_url
+                  )
+                ''')
+                .eq('id', commentId)
+                .single();
+
+            final profile = response['profiles'] as Map<String, dynamic>?;
+            final data = Map<String, dynamic>.from(response);
+            data['user_id'] = data['author_id'];
+            data['content'] = data['body'];
+
+            if (profile != null) {
+              final username = profile['username'] as String?;
+              final firstName = profile['first_name'] as String?;
+              final lastName = profile['last_name'] as String?;
+              final fullName = [firstName, lastName]
+                  .where((s) => s != null && s.isNotEmpty)
+                  .join(' ');
+              data['author_name'] = fullName.isNotEmpty ? fullName : username;
+              data['author_avatar_url'] = profile['avatar_url'];
+            }
+
+            final comment = PostComment.fromJson(data);
             onNewComment(comment);
           },
         )
