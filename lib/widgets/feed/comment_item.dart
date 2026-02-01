@@ -43,7 +43,7 @@ class CommentItem extends StatelessWidget {
                   : null,
               child: comment.authorAvatarUrl == null
                   ? Text(
-                      _getInitials(comment.authorName),
+                      _getInitials(comment.authorUsername),
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onPrimaryContainer,
                         fontSize: comment.isReply ? 10 : 12,
@@ -69,12 +69,12 @@ class CommentItem extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Author name
+                      // Author username
                       GestureDetector(
                         onTap: onAuthorTap,
                         child: Text(
-                          (comment.authorName?.isNotEmpty ?? false)
-                              ? comment.authorName!
+                          (comment.authorUsername?.isNotEmpty ?? false)
+                              ? '@${comment.authorUsername}'
                               : 'Anonymous',
                           style: theme.textTheme.labelMedium?.copyWith(
                             fontWeight: FontWeight.w600,

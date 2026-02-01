@@ -7,6 +7,7 @@ import '../../screens/auth/login_screen.dart';
 import '../../screens/auth/register_screen.dart';
 import '../../screens/home_screen.dart';
 import '../../screens/profile_screen.dart';
+import '../../screens/edit_profile_screen.dart';
 import '../../screens/user_profile_screen.dart';
 import '../../screens/auth/auth_callback_screen.dart';
 import '../../screens/feed/feed_screen.dart';
@@ -14,6 +15,7 @@ import '../../screens/feed/post_detail_screen.dart';
 import '../../screens/feed/create_post_screen.dart';
 import '../../screens/feed/edit_post_screen.dart';
 import '../../screens/feed/search_screen.dart';
+import '../../screens/feed/saved_posts_screen.dart';
 import '../../screens/connections/invite_screen.dart';
 import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
@@ -150,9 +152,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const SearchScreen(),
       ),
       GoRoute(
+        path: '/saved',
+        name: 'saved-posts',
+        builder: (context, state) => const SavedPostsScreen(),
+      ),
+      GoRoute(
         path: '/profile',
         name: 'profile',
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        name: 'edit-profile',
+        builder: (context, state) => const EditProfileScreen(),
       ),
       GoRoute(
         path: '/user/:userId',

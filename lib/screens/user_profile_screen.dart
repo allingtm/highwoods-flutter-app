@@ -82,36 +82,36 @@ class UserProfileScreen extends ConsumerWidget {
                             ),
                     ),
                   ),
+                  SizedBox(height: tokens.spacingLg),
+                  // Display name prominently below avatar
+                  Text(
+                    profile.fullName,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: tokens.spacingXs),
+                  Text(
+                    '@${profile.username}',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  if (profile.bio != null) ...[
+                    SizedBox(height: tokens.spacingLg),
+                    Text(
+                      profile.bio!,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                   SizedBox(height: tokens.spacingXl),
                   AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Profile Information',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        SizedBox(height: tokens.spacingLg),
-                        AppProfileRow(
-                          icon: Icons.person_outline,
-                          label: 'Name',
-                          value: profile.fullName,
-                        ),
-                        if (profile.bio != null) ...[
-                          Divider(height: tokens.spacingXl),
-                          AppProfileRow(
-                            icon: Icons.info_outline,
-                            label: 'Bio',
-                            value: profile.bio!,
-                          ),
-                        ],
-                        Divider(height: tokens.spacingXl),
-                        AppProfileRow(
-                          icon: Icons.badge_outlined,
-                          label: 'Role',
-                          value: profile.role.toUpperCase(),
-                        ),
-                        Divider(height: tokens.spacingXl),
                         AppProfileRow(
                           icon: Icons.calendar_today_outlined,
                           label: 'Member Since',
@@ -175,6 +175,8 @@ class UserProfileScreen extends ConsumerWidget {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 }

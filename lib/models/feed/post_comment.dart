@@ -8,6 +8,7 @@ class PostComment {
   final DateTime updatedAt;
   // Joined from profiles
   final String? authorName;
+  final String? authorUsername;
   final String? authorAvatarUrl;
 
   PostComment({
@@ -19,6 +20,7 @@ class PostComment {
     required this.createdAt,
     required this.updatedAt,
     this.authorName,
+    this.authorUsername,
     this.authorAvatarUrl,
   });
 
@@ -32,6 +34,7 @@ class PostComment {
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       authorName: json['author_name'] as String?,
+      authorUsername: json['author_username'] as String?,
       authorAvatarUrl: json['author_avatar_url'] as String?,
     );
   }
@@ -67,6 +70,7 @@ class PostComment {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? authorName,
+    String? authorUsername,
     String? authorAvatarUrl,
   }) {
     return PostComment(
@@ -78,6 +82,7 @@ class PostComment {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       authorName: authorName ?? this.authorName,
+      authorUsername: authorUsername ?? this.authorUsername,
       authorAvatarUrl: authorAvatarUrl ?? this.authorAvatarUrl,
     );
   }

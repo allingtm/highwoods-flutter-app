@@ -96,8 +96,14 @@ class ProfileScreen extends ConsumerWidget {
                         SizedBox(height: tokens.spacingLg),
                         AppProfileRow(
                           icon: Icons.person_outline,
-                          label: 'Full Name',
-                          value: profile.fullName,
+                          label: 'First Name',
+                          value: profile.firstName ?? '-',
+                        ),
+                        Divider(height: tokens.spacingXl),
+                        AppProfileRow(
+                          icon: Icons.person_outline,
+                          label: 'Last Name',
+                          value: profile.lastName ?? '-',
                         ),
                         Divider(height: tokens.spacingXl),
                         AppProfileRow(
@@ -115,12 +121,6 @@ class ProfileScreen extends ConsumerWidget {
                         ],
                         Divider(height: tokens.spacingXl),
                         AppProfileRow(
-                          icon: Icons.badge_outlined,
-                          label: 'Role',
-                          value: profile.role.toUpperCase(),
-                        ),
-                        Divider(height: tokens.spacingXl),
-                        AppProfileRow(
                           icon: Icons.calendar_today_outlined,
                           label: 'Member Since',
                           value: _formatDate(profile.createdAt),
@@ -135,11 +135,7 @@ class ProfileScreen extends ConsumerWidget {
                       title: const Text('Edit Profile'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Edit profile feature coming soon!'),
-                          ),
-                        );
+                        context.push('/profile/edit');
                       },
                     ),
                   ),
@@ -187,6 +183,8 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 }

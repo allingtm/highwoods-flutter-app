@@ -518,6 +518,7 @@ class FeedRepository {
               .where((s) => s != null && s.isNotEmpty)
               .join(' ');
           data['author_name'] = fullName.isNotEmpty ? fullName : username;
+          data['author_username'] = username;
           data['author_avatar_url'] = profile['avatar_url'];
         }
 
@@ -575,6 +576,7 @@ class FeedRepository {
             .where((s) => s != null && s.isNotEmpty)
             .join(' ');
         data['author_name'] = fullName.isNotEmpty ? fullName : username;
+        data['author_username'] = username;
         data['author_avatar_url'] = profile['avatar_url'];
       }
 
@@ -1041,6 +1043,7 @@ class FeedRepository {
                   .where((s) => s != null && s.isNotEmpty)
                   .join(' ');
               data['author_name'] = fullName.isNotEmpty ? fullName : username;
+              data['author_username'] = username;
               data['author_avatar_url'] = profile['avatar_url'];
             }
 

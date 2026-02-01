@@ -183,7 +183,7 @@ class _PostHeader extends StatelessWidget {
                 : null,
             child: post.authorAvatarUrl == null
                 ? Text(
-                    _getInitials(post.authorName),
+                    _getInitials(post.authorUsername),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
@@ -204,7 +204,9 @@ class _PostHeader extends StatelessWidget {
                     child: GestureDetector(
                       onTap: onAuthorTap,
                       child: Text(
-                        post.authorName ?? 'Anonymous',
+                        post.authorUsername != null
+                            ? '@${post.authorUsername}'
+                            : 'Anonymous',
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),

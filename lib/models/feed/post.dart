@@ -31,6 +31,7 @@ class Post {
 
   // Author info (joined from profiles)
   final String? authorName;
+  final String? authorUsername;
   final String? authorAvatarUrl;
   final bool authorIsVerified;
 
@@ -63,6 +64,7 @@ class Post {
     required this.createdAt,
     required this.updatedAt,
     this.authorName,
+    this.authorUsername,
     this.authorAvatarUrl,
     this.authorIsVerified = false,
     this.images = const [],
@@ -106,6 +108,7 @@ class Post {
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] ?? json['created_at'] as String),
       authorName: authorName,
+      authorUsername: username,
       authorAvatarUrl: json['author_avatar_url'] as String?,
       authorIsVerified: json['author_role'] == 'admin' || json['author_role'] == 'moderator',
       primaryImageUrl: json['primary_image_url'] as String?,
@@ -156,6 +159,7 @@ class Post {
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       authorName: json['author_name'] as String?,
+      authorUsername: json['author_username'] as String?,
       authorAvatarUrl: json['author_avatar_url'] as String?,
       authorIsVerified: json['author_is_verified'] as bool? ?? false,
       images: images,
@@ -227,6 +231,7 @@ class Post {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? authorName,
+    String? authorUsername,
     String? authorAvatarUrl,
     bool? authorIsVerified,
     List<PostImage>? images,
@@ -254,6 +259,7 @@ class Post {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       authorName: authorName ?? this.authorName,
+      authorUsername: authorUsername ?? this.authorUsername,
       authorAvatarUrl: authorAvatarUrl ?? this.authorAvatarUrl,
       authorIsVerified: authorIsVerified ?? this.authorIsVerified,
       images: images ?? this.images,

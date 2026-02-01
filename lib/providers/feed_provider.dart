@@ -308,8 +308,13 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       final isSaved = await _repository.toggleSave(post.id);
 
-      // Update the post in the feed
+      // Update the post
       final updatedPost = post.copyWith(isSaved: isSaved);
+
+      // Update cache first (single source of truth)
+      _ref.read(postCacheProvider.notifier).updatePost(updatedPost);
+
+      // Also update feed list state
       _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
 
       // Invalidate saved posts list

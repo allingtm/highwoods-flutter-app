@@ -500,7 +500,7 @@ class _PostContent extends StatelessWidget {
                   : null,
               child: post.authorAvatarUrl == null
                   ? Text(
-                      _getInitials(post.authorName),
+                      _getInitials(post.authorUsername),
                       style: theme.textTheme.titleMedium?.copyWith(
                         color: theme.colorScheme.onPrimaryContainer,
                       ),
@@ -515,7 +515,9 @@ class _PostContent extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        post.authorName ?? 'Anonymous',
+                        post.authorUsername != null
+                            ? '@${post.authorUsername}'
+                            : 'Anonymous',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),
