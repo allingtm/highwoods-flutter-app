@@ -102,13 +102,15 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           return Column(
             children: [
               Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    ref.invalidate(postDetailProvider(widget.postId));
-                    ref.invalidate(postCommentsProvider(widget.postId));
-                  },
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(tokens.spacingLg),
+                child: GestureDetector(
+                  onTap: () => FocusScope.of(context).unfocus(),
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      ref.invalidate(postDetailProvider(widget.postId));
+                      ref.invalidate(postCommentsProvider(widget.postId));
+                    },
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(tokens.spacingLg),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -169,6 +171,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                     ),
                   ),
                 ),
+              ),
               ),
 
               // Comment input
