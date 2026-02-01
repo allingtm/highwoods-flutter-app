@@ -167,7 +167,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                         onReactionTap: () => _handleReaction(post),
                         onCommentTap: () => context.push('/post/${post.id}#comments'),
                         onSaveTap: () => _handleSave(post),
-                        onShareTap: () => _handleShare(post),
                         onAuthorTap: () => context.push('/user/${post.userId}'),
                       );
                     },
@@ -248,13 +247,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     }
 
     ref.read(feedActionsProvider.notifier).toggleSave(post);
-  }
-
-  void _handleShare(Post post) {
-    // TODO: Implement share functionality
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share coming soon!')),
-    );
   }
 
   void _showLoginPrompt() {

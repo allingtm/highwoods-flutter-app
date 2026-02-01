@@ -81,15 +81,6 @@ class _SavedPostsScreenState extends ConsumerState<SavedPostsScreen> {
     );
   }
 
-  void _handleShare(Post post) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Share coming soon!'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
@@ -308,7 +299,6 @@ class _SavedPostsScreenState extends ConsumerState<SavedPostsScreen> {
       onReactionTap: () => context.push('/post/${post.id}'),
       onCommentTap: () => context.push('/post/${post.id}'),
       onSaveTap: () => _handleUnsave(post),
-      onShareTap: () => _handleShare(post),
       onAuthorTap: () => context.push('/user/${post.userId}'),
     );
   }

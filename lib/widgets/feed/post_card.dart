@@ -13,7 +13,6 @@ class PostCard extends StatelessWidget {
     required this.onReactionTap,
     required this.onCommentTap,
     required this.onSaveTap,
-    required this.onShareTap,
     this.onAuthorTap,
   });
 
@@ -22,7 +21,6 @@ class PostCard extends StatelessWidget {
   final VoidCallback onReactionTap;
   final VoidCallback onCommentTap;
   final VoidCallback onSaveTap;
-  final VoidCallback onShareTap;
   final VoidCallback? onAuthorTap;
 
   @override
@@ -123,7 +121,6 @@ class PostCard extends StatelessWidget {
                     onReactionTap: onReactionTap,
                     onCommentTap: onCommentTap,
                     onSaveTap: onSaveTap,
-                    onShareTap: onShareTap,
                   ),
                 ],
               ),

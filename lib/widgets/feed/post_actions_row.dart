@@ -10,7 +10,6 @@ class PostActionsRow extends StatelessWidget {
     required this.onReactionTap,
     required this.onCommentTap,
     required this.onSaveTap,
-    required this.onShareTap,
     this.compact = false,
   });
 
@@ -18,7 +17,6 @@ class PostActionsRow extends StatelessWidget {
   final VoidCallback onReactionTap;
   final VoidCallback onCommentTap;
   final VoidCallback onSaveTap;
-  final VoidCallback onShareTap;
   final bool compact;
 
   @override
@@ -56,13 +54,6 @@ class PostActionsRow extends StatelessWidget {
           isActive: post.isSaved,
           activeColor: theme.colorScheme.primary,
           onTap: onSaveTap,
-          compact: compact,
-        ),
-        SizedBox(width: tokens.spacingSm),
-        // Share button
-        _ActionButton(
-          icon: Icons.share_outlined,
-          onTap: onShareTap,
           compact: compact,
         ),
       ],

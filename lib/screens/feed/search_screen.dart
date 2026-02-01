@@ -75,16 +75,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
   }
 
-  void _handleShare(dynamic post) {
-    // Share functionality - show coming soon for now
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Share coming soon'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
@@ -203,7 +193,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               onReactionTap: () => _handleReaction(post),
               onCommentTap: () => context.push('/post/${post.id}'),
               onSaveTap: () => _handleSave(post),
-              onShareTap: () => _handleShare(post),
             );
           },
         );

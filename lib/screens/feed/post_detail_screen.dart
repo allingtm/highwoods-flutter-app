@@ -123,7 +123,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           onReactionTap: () => _handleReaction(post),
                           onCommentTap: () => _commentFocusNode.requestFocus(),
                           onSaveTap: () => _handleSave(post),
-                          onShareTap: () => _handleShare(post),
                         ),
 
                         Divider(height: tokens.spacing2xl),
@@ -245,12 +244,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     ref.read(feedActionsProvider.notifier).toggleSave(post);
   }
 
-  void _handleShare(Post post) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share coming soon!')),
-    );
-  }
-
   void _handleReply(PostComment comment) {
     setState(() {
       _replyingToComment = comment;
@@ -363,14 +356,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   },
                 ),
               ],
-              ListTile(
-                leading: const Icon(Icons.share_outlined),
-                title: const Text('Share'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _handleShare(post);
-                },
-              ),
             ],
           ),
         ),
