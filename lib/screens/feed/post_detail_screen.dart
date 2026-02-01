@@ -115,7 +115,10 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Post content
-                        _PostContent(post: post),
+                        _PostContent(
+                          post: post,
+                          onAuthorTap: () => context.push('/user/${post.userId}'),
+                        ),
 
                         SizedBox(height: tokens.spacingXl),
 
@@ -465,9 +468,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
 /// Post content widget
 class _PostContent extends StatelessWidget {
-  const _PostContent({required this.post});
+  const _PostContent({
+    required this.post,
+    this.onAuthorTap,
+  });
 
   final Post post;
+  final VoidCallback? onAuthorTap;
 
   @override
   Widget build(BuildContext context) {
@@ -480,45 +487,51 @@ class _PostContent extends StatelessWidget {
         // Author header
         Row(
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              backgroundImage: post.authorAvatarUrl != null
-                  ? NetworkImage(post.authorAvatarUrl!)
-                  : null,
-              child: post.authorAvatarUrl == null
-                  ? Text(
-                      _getInitials(post.authorUsername),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                    )
-                  : null,
+            GestureDetector(
+              onTap: onAuthorTap,
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                backgroundImage: post.authorAvatarUrl != null
+                    ? NetworkImage(post.authorAvatarUrl!)
+                    : null,
+                child: post.authorAvatarUrl == null
+                    ? Text(
+                        _getInitials(post.authorUsername),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      )
+                    : null,
+              ),
             ),
             SizedBox(width: tokens.spacingMd),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        post.authorUsername != null
-                            ? '@${post.authorUsername}'
-                            : 'Anonymous',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+                  GestureDetector(
+                    onTap: onAuthorTap,
+                    child: Row(
+                      children: [
+                        Text(
+                          post.authorUsername != null
+                              ? '@${post.authorUsername}'
+                              : 'Anonymous',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      if (post.authorIsVerified) ...[
-                        SizedBox(width: tokens.spacingXs),
-                        Icon(
-                          Icons.verified_rounded,
-                          size: 16,
-                          color: theme.colorScheme.primary,
-                        ),
+                        if (post.authorIsVerified) ...[
+                          SizedBox(width: tokens.spacingXs),
+                          Icon(
+                            Icons.verified_rounded,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                   Text(
                     '${post.timeAgo} • ${post.postType.displayName}',
