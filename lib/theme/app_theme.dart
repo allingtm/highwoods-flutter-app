@@ -4,7 +4,7 @@ import 'app_theme_tokens.dart';
 class AppTheme {
   AppTheme._();
 
-  static const _seedColor = Colors.blue;
+  static const _seedColor = Color(0xFF4A7C59);  // Highwoods brand green
 
   static ThemeData get light {
     return ThemeData(
