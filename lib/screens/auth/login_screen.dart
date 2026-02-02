@@ -50,115 +50,171 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _dismissKeyboard() {
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(tokens.spacingXl),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(height: tokens.spacingXl),
-                Icon(
-                  Icons.lock_outline,
-                  size: tokens.iconXl,
-                  color: Theme.of(context).colorScheme.primary,
+    return GestureDetector(
+      onTap: _dismissKeyboard,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back,
+              color: theme.colorScheme.onSurface,
+            ),
+            onPressed: () => context.go('/'),
+          ),
+        ),
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacingXl,
+                vertical: tokens.spacing2xl,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo
+                      Center(
+                        child: Image.asset(
+                          'assets/images/highwoods-app-logo.png',
+                          width: 240,
+                        ),
+                      ),
+                      SizedBox(height: tokens.spacing2xl),
+
+                      if (!_magicLinkSent) ...[
+                        // Welcome text
+                        Text(
+                          'Welcome back',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: tokens.spacingSm),
+                        Text(
+                          'Sign in to your community',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: tokens.spacing2xl),
+
+                        // Email field
+                        AppTextField.email(
+                          controller: _emailController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!value.contains('@')) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        if (_errorMessage != null) ...[
+                          SizedBox(height: tokens.spacingLg),
+                          AppErrorContainer(message: _errorMessage!),
+                        ],
+
+                        SizedBox(height: tokens.spacingXl),
+
+                        // Send button
+                        AppButton(
+                          text: 'Send Magic Link',
+                          onPressed: _sendMagicLink,
+                          isLoading: _isLoading,
+                        ),
+                      ] else ...[
+                        // Magic link sent state
+                        Icon(
+                          Icons.mark_email_read_outlined,
+                          size: tokens.iconXl,
+                          color: theme.colorScheme.primary,
+                        ),
+                        SizedBox(height: tokens.spacingXl),
+                        Text(
+                          'Check your inbox',
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: tokens.spacingLg),
+                        Text(
+                          'We sent a magic link to',
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: tokens.spacingSm),
+                        Text(
+                          _emailController.text.trim(),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: tokens.spacingXl),
+                        AppInfoContainer(
+                          icon: Icons.touch_app_rounded,
+                          child: const Text('Tap the link in your email to sign in'),
+                        ),
+                        SizedBox(height: tokens.spacingXl),
+                        AppButton(
+                          text: 'Use a different email',
+                          variant: AppButtonVariant.outline,
+                          onPressed: () {
+                            setState(() {
+                              _magicLinkSent = false;
+                              _errorMessage = null;
+                            });
+                          },
+                        ),
+                      ],
+
+                      SizedBox(height: tokens.spacing2xl),
+                      const Divider(),
+                      SizedBox(height: tokens.spacingLg),
+
+                      // Register link
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            "Don't have an account?",
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.push('/register'),
+                            child: const Text('Register'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                SizedBox(height: tokens.spacingXl),
-                Text(
-                  'Sign in to your account',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: tokens.spacing2xl),
-                if (!_magicLinkSent) ...[
-                  AppTextField.email(
-                    controller: _emailController,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  if (_errorMessage != null) ...[
-                    SizedBox(height: tokens.spacingLg),
-                    AppErrorContainer(message: _errorMessage!),
-                  ],
-                  SizedBox(height: tokens.spacingXl),
-                  AppButton(
-                    text: 'Send Magic Link',
-                    onPressed: _sendMagicLink,
-                    isLoading: _isLoading,
-                  ),
-                ] else ...[
-                  Icon(
-                    Icons.email_outlined,
-                    size: tokens.iconXl,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  SizedBox(height: tokens.spacingXl),
-                  Text(
-                    'Check your email!',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: tokens.spacingLg),
-                  Text(
-                    'We sent a magic link to:',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: tokens.spacingSm),
-                  Text(
-                    _emailController.text.trim(),
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: tokens.spacingXl),
-                  AppInfoContainer(
-                    icon: Icons.touch_app,
-                    child: const Text('Click the link in your email to log in'),
-                  ),
-                  SizedBox(height: tokens.spacingXl),
-                  AppButton(
-                    text: 'Use a different email',
-                    variant: AppButtonVariant.ghost,
-                    onPressed: () {
-                      setState(() {
-                        _magicLinkSent = false;
-                        _errorMessage = null;
-                      });
-                    },
-                  ),
-                ],
-                SizedBox(height: tokens.spacingXl),
-                const Divider(),
-                SizedBox(height: tokens.spacingLg),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Don't have an account? "),
-                    TextButton(
-                      onPressed: () => context.go('/register'),
-                      child: const Text('Register'),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
