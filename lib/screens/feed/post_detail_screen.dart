@@ -125,9 +125,14 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                         // Actions row
                         PostActionsRow(
                           post: post,
-                          onReactionTap: () => _handleReaction(post),
+                          onReactionTap: () => showReactionPicker(context: context, ref: ref, post: post),
                           onCommentTap: () => _commentFocusNode.requestFocus(),
-                          onSaveTap: () => _handleSave(post),
+                          onSaveTap: () => handleSavePost(context: context, ref: ref, post: post),
+                          showMessageButton: shouldShowMessageButton(
+                            post: post,
+                            currentUserId: currentUser?.id,
+                          ),
+                          onMessageTap: () => handleMessageAuthor(context: context, ref: ref, post: post),
                         ),
 
                         Divider(height: tokens.spacing2xl),
@@ -216,38 +221,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ),
       ),
     );
-  }
-
-  void _handleReaction(Post post) {
-    final isAuthenticated = ref.read(isAuthenticatedProvider);
-    if (!isAuthenticated) {
-      _showLoginPrompt();
-      return;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => _ReactionPickerSheet(
-        currentReaction: post.userReaction,
-        onReactionSelected: (reactionType) {
-          Navigator.pop(context);
-          ref.read(feedActionsProvider.notifier).toggleReaction(
-            postId: post.id,
-            reactionType: reactionType,
-          );
-        },
-      ),
-    );
-  }
-
-  void _handleSave(Post post) {
-    final isAuthenticated = ref.read(isAuthenticatedProvider);
-    if (!isAuthenticated) {
-      _showLoginPrompt();
-      return;
-    }
-
-    ref.read(feedActionsProvider.notifier).toggleSave(post);
   }
 
   void _handleReply(PostComment comment) {
@@ -411,56 +384,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
             );
           }
         },
-      ),
-    );
-  }
-
-  void _showLoginPrompt() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(context.tokens.spacingXl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.login_rounded,
-                size: context.tokens.iconLg,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              SizedBox(height: context.tokens.spacingLg),
-              Text(
-                'Sign in to interact',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              SizedBox(height: context.tokens.spacingSm),
-              Text(
-                'Create an account or sign in to like, comment, and save posts.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: context.tokens.spacingXl),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.push('/login');
-                },
-                child: const Text('Sign in'),
-              ),
-              SizedBox(height: context.tokens.spacingMd),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.push('/register');
-                },
-                child: const Text('Create account'),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -750,87 +673,6 @@ class _CommentInput extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Reaction picker bottom sheet
-class _ReactionPickerSheet extends StatelessWidget {
-  const _ReactionPickerSheet({
-    required this.currentReaction,
-    required this.onReactionSelected,
-  });
-
-  final String? currentReaction;
-  final void Function(String) onReactionSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    final theme = Theme.of(context);
-
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacingXl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'React to this post',
-              style: theme.textTheme.titleMedium,
-            ),
-            SizedBox(height: tokens.spacingXl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildReaction('like', Icons.thumb_up_rounded, 'Like', Colors.blue),
-                _buildReaction('love', Icons.favorite_rounded, 'Love', Colors.red),
-                _buildReaction('helpful', Icons.lightbulb_rounded, 'Helpful', Colors.amber),
-                _buildReaction('thanks', Icons.volunteer_activism_rounded, 'Thanks', Colors.purple),
-              ],
-            ),
-            SizedBox(height: tokens.spacingLg),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReaction(String type, IconData icon, String label, Color color) {
-    return Builder(
-      builder: (context) {
-        final tokens = context.tokens;
-        final theme = Theme.of(context);
-        final isSelected = currentReaction == type;
-
-        return InkWell(
-          onTap: () => onReactionSelected(type),
-          borderRadius: BorderRadius.circular(tokens.radiusLg),
-          child: Container(
-            padding: EdgeInsets.all(tokens.spacingMd),
-            decoration: isSelected
-                ? BoxDecoration(
-                    color: color.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(tokens.radiusLg),
-                  )
-                : null,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: color, size: 32),
-                SizedBox(height: tokens.spacingXs),
-                Text(
-                  label,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: isSelected ? color : theme.colorScheme.onSurfaceVariant,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

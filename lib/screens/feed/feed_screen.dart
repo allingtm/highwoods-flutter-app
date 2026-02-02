@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/post_category.dart';
-import '../../models/feed/feed_models.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
@@ -164,9 +163,9 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                       return PostCard(
                         post: post,
                         onTap: () => context.push('/post/${post.id}'),
-                        onReactionTap: () => _handleReaction(post),
+                        onReactionTap: () => showReactionPicker(context: context, ref: ref, post: post),
                         onCommentTap: () => context.push('/post/${post.id}#comments'),
-                        onSaveTap: () => _handleSave(post),
+                        onSaveTap: () => handleSavePost(context: context, ref: ref, post: post),
                         onAuthorTap: () => context.push('/user/${post.userId}'),
                       );
                     },
@@ -213,89 +212,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                   label: const Text('Post'),
                 )
               : null),
-    );
-  }
-
-  void _handleReaction(Post post) {
-    final isAuthenticated = ref.read(isAuthenticatedProvider);
-    if (!isAuthenticated) {
-      _showLoginPrompt();
-      return;
-    }
-
-    // Show reaction picker
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => _ReactionPickerSheet(
-        currentReaction: post.userReaction,
-        onReactionSelected: (reactionType) {
-          Navigator.pop(context);
-          ref.read(feedActionsProvider.notifier).toggleReaction(
-            postId: post.id,
-            reactionType: reactionType,
-          );
-        },
-      ),
-    );
-  }
-
-  void _handleSave(Post post) {
-    final isAuthenticated = ref.read(isAuthenticatedProvider);
-    if (!isAuthenticated) {
-      _showLoginPrompt();
-      return;
-    }
-
-    ref.read(feedActionsProvider.notifier).toggleSave(post);
-  }
-
-  void _showLoginPrompt() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(context.tokens.spacingXl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.login_rounded,
-                size: context.tokens.iconLg,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              SizedBox(height: context.tokens.spacingLg),
-              Text(
-                'Sign in to interact',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              SizedBox(height: context.tokens.spacingSm),
-              Text(
-                'Create an account or sign in to like, comment, and save posts.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: context.tokens.spacingXl),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.push('/login');
-                },
-                child: const Text('Sign in'),
-              ),
-              SizedBox(height: context.tokens.spacingMd),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  context.push('/register');
-                },
-                child: const Text('Create account'),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -402,133 +318,6 @@ class _ErrorState extends StatelessWidget {
               onPressed: onRetry,
               icon: const Icon(Icons.refresh_rounded),
               label: const Text('Try Again'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Bottom sheet for selecting reactions
-class _ReactionPickerSheet extends StatelessWidget {
-  const _ReactionPickerSheet({
-    required this.currentReaction,
-    required this.onReactionSelected,
-  });
-
-  final String? currentReaction;
-  final void Function(String) onReactionSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    final theme = Theme.of(context);
-
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacingXl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'React to this post',
-              style: theme.textTheme.titleMedium,
-            ),
-            SizedBox(height: tokens.spacingXl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _ReactionButton(
-                  type: 'like',
-                  icon: Icons.thumb_up_rounded,
-                  label: 'Like',
-                  color: Colors.blue,
-                  isSelected: currentReaction == 'like',
-                  onTap: () => onReactionSelected('like'),
-                ),
-                _ReactionButton(
-                  type: 'love',
-                  icon: Icons.favorite_rounded,
-                  label: 'Love',
-                  color: Colors.red,
-                  isSelected: currentReaction == 'love',
-                  onTap: () => onReactionSelected('love'),
-                ),
-                _ReactionButton(
-                  type: 'helpful',
-                  icon: Icons.lightbulb_rounded,
-                  label: 'Helpful',
-                  color: Colors.amber,
-                  isSelected: currentReaction == 'helpful',
-                  onTap: () => onReactionSelected('helpful'),
-                ),
-                _ReactionButton(
-                  type: 'thanks',
-                  icon: Icons.volunteer_activism_rounded,
-                  label: 'Thanks',
-                  color: Colors.purple,
-                  isSelected: currentReaction == 'thanks',
-                  onTap: () => onReactionSelected('thanks'),
-                ),
-              ],
-            ),
-            SizedBox(height: tokens.spacingLg),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReactionButton extends StatelessWidget {
-  const _ReactionButton({
-    required this.type,
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String type;
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    final theme = Theme.of(context);
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(tokens.radiusLg),
-      child: Container(
-        padding: EdgeInsets.all(tokens.spacingMd),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(tokens.radiusLg),
-              )
-            : null,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: color,
-              size: 32,
-            ),
-            SizedBox(height: tokens.spacingXs),
-            Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: isSelected ? color : theme.colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              ),
             ),
           ],
         ),
