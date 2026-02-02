@@ -246,6 +246,60 @@ final savedPostsProvider = FutureProvider<List<Post>>((ref) async {
 });
 
 // ============================================================
+// Public User Profile Content Providers
+// ============================================================
+
+/// Posts by a specific user (for public profile)
+/// Merges fetched posts with cached data to ensure latest reaction state is shown
+final userPostsByIdProvider = FutureProvider.family<List<Post>, String>((ref, userId) async {
+  final repository = ref.watch(feedRepositoryProvider);
+  final posts = await repository.getUserPosts(userId);
+
+  // Merge with cache to get latest reaction state
+  final cache = ref.read(postCacheProvider);
+  return posts.map((post) {
+    final cachedPost = cache[post.id];
+    if (cachedPost != null) {
+      // Use cached reaction state (more up-to-date)
+      return post.copyWith(
+        userReaction: cachedPost.userReaction,
+        reactionCount: cachedPost.reactionCount,
+        isSaved: cachedPost.isSaved,
+      );
+    }
+    return post;
+  }).toList();
+});
+
+/// Comments by a specific user (for public profile)
+final userCommentsByIdProvider = FutureProvider.family<List<PostComment>, String>((ref, userId) async {
+  final repository = ref.watch(feedRepositoryProvider);
+  return repository.getUserComments(userId);
+});
+
+/// Posts liked/reacted to by a specific user (for public profile)
+/// Merges fetched posts with cached data to ensure latest reaction state is shown
+final userLikedPostsProvider = FutureProvider.family<List<Post>, String>((ref, userId) async {
+  final repository = ref.watch(feedRepositoryProvider);
+  final posts = await repository.getUserLikedPosts(userId);
+
+  // Merge with cache to get latest reaction state
+  final cache = ref.read(postCacheProvider);
+  return posts.map((post) {
+    final cachedPost = cache[post.id];
+    if (cachedPost != null) {
+      // Use cached reaction state (more up-to-date)
+      return post.copyWith(
+        userReaction: cachedPost.userReaction,
+        reactionCount: cachedPost.reactionCount,
+        isSaved: cachedPost.isSaved,
+      );
+    }
+    return post;
+  }).toList();
+});
+
+// ============================================================
 // Feed Actions Notifier
 // ============================================================
 
@@ -297,6 +351,10 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       // Also update feed list state
       _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
+
+      // Invalidate profile providers so they refresh when viewed
+      _ref.invalidate(userLikedPostsProvider);
+      _ref.invalidate(userPostsByIdProvider);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
       rethrow;
