@@ -57,6 +57,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
+  void _dismissKeyboard() {
+    FocusScope.of(context).unfocus();
+  }
+
   Future<void> _validateCode() async {
     final code = _codeController.text.trim().toUpperCase();
     if (code.isEmpty) {
@@ -134,74 +138,101 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
+    return GestureDetector(
+      onTap: _dismissKeyboard,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+            onPressed: () => context.go('/'),
+          ),
         ),
-        title: const Text('Register'),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(tokens.spacingXl),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SizedBox(height: tokens.spacingLg),
-                Center(
-                  child: Image.asset(
-                    'assets/images/splash_logo.png',
-                    width: MediaQuery.of(context).size.width * 0.8,
+        body: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacingXl,
+                vertical: tokens.spacing2xl,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Logo
+                      Center(
+                        child: Image.asset(
+                          'assets/images/highwoods-app-logo.png',
+                          width: 240,
+                        ),
+                      ),
+                      SizedBox(height: tokens.spacing2xl),
+
+                      // Title based on current step
+                      Text(
+                        _magicLinkSent
+                            ? 'Check your inbox'
+                            : _isCodeValidated
+                                ? 'Create your account'
+                                : 'Join the community',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: tokens.spacingSm),
+                      Text(
+                        _magicLinkSent
+                            ? 'We sent a magic link to verify your email'
+                            : _isCodeValidated
+                                ? 'Complete your profile to get started'
+                                : 'Enter your invitation code to register',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: tokens.spacing2xl),
+
+                      if (!_isCodeValidated) ...[
+                        // Step 1: Invite code validation
+                        _buildCodeEntryStep(tokens, theme),
+                      ] else if (!_magicLinkSent) ...[
+                        // Step 2: Registration form
+                        _buildRegistrationStep(tokens, theme),
+                      ] else ...[
+                        // Step 3: Magic link sent confirmation
+                        _buildMagicLinkSentStep(tokens, theme),
+                      ],
+
+                      SizedBox(height: tokens.spacing2xl),
+                      const Divider(),
+                      SizedBox(height: tokens.spacingLg),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Already have an account?',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () => context.push('/login'),
+                            child: const Text('Login'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                SizedBox(height: tokens.spacingXl),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _isCodeValidated ? Icons.check_circle_outline : Icons.vpn_key_outlined,
-                      size: tokens.iconMd,
-                      color: colorScheme.primary,
-                    ),
-                    SizedBox(width: tokens.spacingMd),
-                    Text(
-                      _isCodeValidated ? 'Create your account' : 'Enter Invite Code',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                  ],
-                ),
-                SizedBox(height: tokens.spacingXl),
-
-                if (!_isCodeValidated) ...[
-                  // Step 1: Invite code validation
-                  _buildCodeEntryStep(tokens),
-                ] else if (!_magicLinkSent) ...[
-                  // Step 2: Registration form
-                  _buildRegistrationStep(tokens),
-                ] else ...[
-                  // Step 3: Magic link sent confirmation
-                  _buildMagicLinkSentStep(tokens),
-                ],
-
-                SizedBox(height: tokens.spacingXl),
-                const Divider(),
-                SizedBox(height: tokens.spacingLg),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Already have an account? '),
-                    TextButton(
-                      onPressed: () => context.go('/login'),
-                      child: const Text('Login'),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -209,9 +240,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildCodeEntryStep(AppThemeTokens tokens) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+  Widget _buildCodeEntryStep(AppThemeTokens tokens, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -220,7 +249,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           padding: EdgeInsets.all(tokens.spacingLg),
           decoration: BoxDecoration(
             border: Border.all(
-              color: colorScheme.outline,
+              color: theme.colorScheme.outline,
               width: 1,
             ),
             borderRadius: BorderRadius.circular(tokens.radiusLg),
@@ -230,21 +259,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               Icon(
                 Icons.lock_outline,
                 size: tokens.iconLg,
-                color: colorScheme.primary,
+                color: theme.colorScheme.primary,
               ),
               SizedBox(height: tokens.spacingMd),
               Text(
                 'Invitation Only',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
               ),
               SizedBox(height: tokens.spacingSm),
               Text(
                 'Highwoods is an invitation-only community. Enter the invite code you received, or ask someone you know with an account to send you an invitation.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -281,7 +311,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildRegistrationStep(AppThemeTokens tokens) {
+  Widget _buildRegistrationStep(AppThemeTokens tokens, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -290,10 +320,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           Container(
             padding: EdgeInsets.all(tokens.spacingLg),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(tokens.radiusLg),
               border: Border.all(
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                color: theme.colorScheme.primary.withValues(alpha: 0.3),
               ),
             ),
             child: Row(
@@ -303,7 +333,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   height: 48,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: theme.colorScheme.primary,
                   ),
                   child: _validationResult!.inviterAvatar != null
                       ? ClipOval(
@@ -312,13 +342,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Icon(
                               Icons.person,
-                              color: Theme.of(context).colorScheme.onPrimary,
+                              color: theme.colorScheme.onPrimary,
                             ),
                           ),
                         )
                       : Icon(
                           Icons.person,
-                          color: Theme.of(context).colorScheme.onPrimary,
+                          color: theme.colorScheme.onPrimary,
                         ),
                 ),
                 SizedBox(width: tokens.spacingMd),
@@ -331,22 +361,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           Icon(
                             Icons.check_circle,
                             size: 16,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: theme.colorScheme.primary,
                           ),
                           SizedBox(width: tokens.spacingXs),
                           Text(
                             'Invited by',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
                         ],
                       ),
                       Text(
                         _validationResult!.inviterName ?? 'A member',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -364,7 +394,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             Container(
               padding: EdgeInsets.all(tokens.spacingMd),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(tokens.radiusMd),
               ),
               child: Row(
@@ -373,15 +403,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Icon(
                     Icons.format_quote,
                     size: 20,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                   SizedBox(width: tokens.spacingSm),
                   Expanded(
                     child: Text(
                       _validationResult!.message!,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontStyle: FontStyle.italic,
-                          ),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ),
                 ],
@@ -440,44 +470,32 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  Widget _buildMagicLinkSentStep(AppThemeTokens tokens) {
+  Widget _buildMagicLinkSentStep(AppThemeTokens tokens, ThemeData theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Icon(
-          Icons.email_outlined,
+          Icons.mark_email_read_outlined,
           size: tokens.iconXl,
-          color: Theme.of(context).colorScheme.primary,
+          color: theme.colorScheme.primary,
         ),
         SizedBox(height: tokens.spacingXl),
         Text(
-          'Check your email!',
-          style: Theme.of(context).textTheme.headlineSmall,
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: tokens.spacingLg),
-        Text(
-          'We sent a magic link to:',
-          style: Theme.of(context).textTheme.bodyMedium,
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: tokens.spacingSm),
-        Text(
           _emailController.text.trim(),
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
           textAlign: TextAlign.center,
         ),
         SizedBox(height: tokens.spacingXl),
         AppInfoContainer(
-          icon: Icons.touch_app,
-          child: const Text('Click the link in your email to create your account'),
+          icon: Icons.touch_app_rounded,
+          child: const Text('Tap the link in your email to create your account'),
         ),
         SizedBox(height: tokens.spacingXl),
         AppButton(
           text: 'Use a different email',
-          variant: AppButtonVariant.ghost,
+          variant: AppButtonVariant.outline,
           onPressed: () {
             setState(() {
               _magicLinkSent = false;

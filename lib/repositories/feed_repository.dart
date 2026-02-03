@@ -176,7 +176,7 @@ class FeedRepository {
       final response = await _supabase
           .from('feed_posts_view')
           .select()
-          .eq('user_id', userId)
+          .eq('author_id', userId)
           .order('created_at', ascending: false);
 
       return (response as List<dynamic>)
@@ -186,6 +186,83 @@ class FeedRepository {
       throw Exception('Failed to fetch user posts: ${e.message}');
     } catch (e) {
       throw Exception('Failed to fetch user posts: $e');
+    }
+  }
+
+  /// Gets comments made by a specific user
+  Future<List<PostComment>> getUserComments(String userId) async {
+    try {
+      final response = await _supabase
+          .from('post_comments')
+          .select('''
+            *,
+            profiles:author_id (
+              username,
+              first_name,
+              last_name,
+              avatar_url
+            ),
+            posts:post_id (
+              id,
+              title,
+              body
+            )
+          ''')
+          .eq('author_id', userId)
+          .order('created_at', ascending: false);
+
+      return (response as List<dynamic>).map((json) {
+        final profile = json['profiles'] as Map<String, dynamic>?;
+        final post = json['posts'] as Map<String, dynamic>?;
+        final data = Map<String, dynamic>.from(json);
+
+        // Map database column names to model field names
+        data['user_id'] = data['author_id'];
+        data['content'] = data['body'];
+
+        if (profile != null) {
+          final username = profile['username'] as String?;
+          final firstName = profile['first_name'] as String?;
+          final lastName = profile['last_name'] as String?;
+          final fullName = [firstName, lastName]
+              .where((s) => s != null && s.isNotEmpty)
+              .join(' ');
+          data['author_name'] = fullName.isNotEmpty ? fullName : username;
+          data['author_username'] = username;
+          data['author_avatar_url'] = profile['avatar_url'];
+        }
+
+        // Include post info for context
+        if (post != null) {
+          data['post_title'] = post['title'];
+          data['post_body'] = post['body'];
+        }
+
+        return PostComment.fromJson(data);
+      }).toList();
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to fetch user comments: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to fetch user comments: $e');
+    }
+  }
+
+  /// Gets posts that a specific user has reacted to (liked)
+  Future<List<Post>> getUserLikedPosts(String userId) async {
+    try {
+      final response = await _supabase
+          .from('post_reactions')
+          .select('post_id, posts:feed_posts_view!inner(*)')
+          .eq('user_id', userId)
+          .order('created_at', ascending: false);
+
+      return (response as List<dynamic>)
+          .map((json) => Post.fromFeedJson(json['posts'] as Map<String, dynamic>))
+          .toList();
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to fetch liked posts: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to fetch liked posts: $e');
     }
   }
 
@@ -493,6 +570,7 @@ class FeedRepository {
           .select('''
             *,
             profiles:author_id (
+              username,
               first_name,
               last_name,
               avatar_url
@@ -510,11 +588,14 @@ class FeedRepository {
         data['content'] = data['body'];
 
         if (profile != null) {
+          final username = profile['username'] as String?;
           final firstName = profile['first_name'] as String?;
           final lastName = profile['last_name'] as String?;
-          data['author_name'] = [firstName, lastName]
+          final fullName = [firstName, lastName]
               .where((s) => s != null && s.isNotEmpty)
               .join(' ');
+          data['author_name'] = fullName.isNotEmpty ? fullName : username;
+          data['author_username'] = username;
           data['author_avatar_url'] = profile['avatar_url'];
         }
 
@@ -547,13 +628,34 @@ class FeedRepository {
             'body': content, // Database column is 'body', not 'content'
             'parent_id': parentId,
           })
-          .select()
+          .select('''
+            *,
+            profiles:author_id (
+              username,
+              first_name,
+              last_name,
+              avatar_url
+            )
+          ''')
           .single();
 
       // Map database column names to model field names
+      final profile = response['profiles'] as Map<String, dynamic>?;
       final data = Map<String, dynamic>.from(response);
       data['user_id'] = data['author_id'];
       data['content'] = data['body'];
+
+      if (profile != null) {
+        final username = profile['username'] as String?;
+        final firstName = profile['first_name'] as String?;
+        final lastName = profile['last_name'] as String?;
+        final fullName = [firstName, lastName]
+            .where((s) => s != null && s.isNotEmpty)
+            .join(' ');
+        data['author_name'] = fullName.isNotEmpty ? fullName : username;
+        data['author_username'] = username;
+        data['author_avatar_url'] = profile['avatar_url'];
+      }
 
       return PostComment.fromJson(data);
     } on PostgrestException catch (e) {
@@ -992,8 +1094,41 @@ class FeedRepository {
             column: 'post_id',
             value: postId,
           ),
-          callback: (payload) {
-            final comment = PostComment.fromJson(payload.newRecord);
+          callback: (payload) async {
+            final commentId = payload.newRecord['id'] as String;
+            // Fetch the full comment with profile data
+            final response = await _supabase
+                .from('post_comments')
+                .select('''
+                  *,
+                  profiles:author_id (
+                    username,
+                    first_name,
+                    last_name,
+                    avatar_url
+                  )
+                ''')
+                .eq('id', commentId)
+                .single();
+
+            final profile = response['profiles'] as Map<String, dynamic>?;
+            final data = Map<String, dynamic>.from(response);
+            data['user_id'] = data['author_id'];
+            data['content'] = data['body'];
+
+            if (profile != null) {
+              final username = profile['username'] as String?;
+              final firstName = profile['first_name'] as String?;
+              final lastName = profile['last_name'] as String?;
+              final fullName = [firstName, lastName]
+                  .where((s) => s != null && s.isNotEmpty)
+                  .join(' ');
+              data['author_name'] = fullName.isNotEmpty ? fullName : username;
+              data['author_username'] = username;
+              data['author_avatar_url'] = profile['avatar_url'];
+            }
+
+            final comment = PostComment.fromJson(data);
             onNewComment(comment);
           },
         )

@@ -7,6 +7,8 @@ import 'app_theme_tokens.dart';
 class AppTheme {
   AppTheme._();
 
+  static const _seedColor = Color(0xFF4A7C59);  // Highwoods brand green
+
   /// Create ThemeData from a color palette.
   /// This is the primary factory method used by the theme provider.
   static ThemeData fromPalette(AppColorPalette palette) {

@@ -13,7 +13,6 @@ class PostCard extends StatelessWidget {
     required this.onReactionTap,
     required this.onCommentTap,
     required this.onSaveTap,
-    required this.onShareTap,
     this.onAuthorTap,
   });
 
@@ -22,7 +21,6 @@ class PostCard extends StatelessWidget {
   final VoidCallback onReactionTap;
   final VoidCallback onCommentTap;
   final VoidCallback onSaveTap;
-  final VoidCallback onShareTap;
   final VoidCallback? onAuthorTap;
 
   @override
@@ -123,7 +121,6 @@ class PostCard extends StatelessWidget {
                     onReactionTap: onReactionTap,
                     onCommentTap: onCommentTap,
                     onSaveTap: onSaveTap,
-                    onShareTap: onShareTap,
                   ),
                 ],
               ),
@@ -183,7 +180,7 @@ class _PostHeader extends StatelessWidget {
                 : null,
             child: post.authorAvatarUrl == null
                 ? Text(
-                    _getInitials(post.authorName),
+                    _getInitials(post.authorUsername),
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: theme.colorScheme.onPrimaryContainer,
                     ),
@@ -204,7 +201,9 @@ class _PostHeader extends StatelessWidget {
                     child: GestureDetector(
                       onTap: onAuthorTap,
                       child: Text(
-                        post.authorName ?? 'Anonymous',
+                        post.authorUsername != null
+                            ? '@${post.authorUsername}'
+                            : 'Anonymous',
                         style: theme.textTheme.labelLarge?.copyWith(
                           fontWeight: FontWeight.w600,
                         ),

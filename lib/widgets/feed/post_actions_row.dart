@@ -10,7 +10,8 @@ class PostActionsRow extends StatelessWidget {
     required this.onReactionTap,
     required this.onCommentTap,
     required this.onSaveTap,
-    required this.onShareTap,
+    this.onMessageTap,
+    this.showMessageButton = false,
     this.compact = false,
   });
 
@@ -18,7 +19,8 @@ class PostActionsRow extends StatelessWidget {
   final VoidCallback onReactionTap;
   final VoidCallback onCommentTap;
   final VoidCallback onSaveTap;
-  final VoidCallback onShareTap;
+  final VoidCallback? onMessageTap;
+  final bool showMessageButton;
   final bool compact;
 
   @override
@@ -47,6 +49,15 @@ class PostActionsRow extends StatelessWidget {
           onTap: onCommentTap,
           compact: compact,
         ),
+        // Message button (for high-priority post types)
+        if (showMessageButton && onMessageTap != null) ...[
+          SizedBox(width: tokens.spacingMd),
+          _ActionButton(
+            icon: Icons.mail_outline,
+            onTap: onMessageTap!,
+            compact: compact,
+          ),
+        ],
         const Spacer(),
         // Save button
         _ActionButton(
@@ -56,13 +67,6 @@ class PostActionsRow extends StatelessWidget {
           isActive: post.isSaved,
           activeColor: theme.colorScheme.primary,
           onTap: onSaveTap,
-          compact: compact,
-        ),
-        SizedBox(width: tokens.spacingSm),
-        // Share button
-        _ActionButton(
-          icon: Icons.share_outlined,
-          onTap: onShareTap,
           compact: compact,
         ),
       ],

@@ -8,6 +8,7 @@ class PostComment {
   final DateTime updatedAt;
   // Joined from profiles
   final String? authorName;
+  final String? authorUsername;
   final String? authorAvatarUrl;
 
   PostComment({
@@ -19,6 +20,7 @@ class PostComment {
     required this.createdAt,
     required this.updatedAt,
     this.authorName,
+    this.authorUsername,
     this.authorAvatarUrl,
   });
 
@@ -32,6 +34,7 @@ class PostComment {
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
       authorName: json['author_name'] as String?,
+      authorUsername: json['author_username'] as String?,
       authorAvatarUrl: json['author_avatar_url'] as String?,
     );
   }
@@ -58,6 +61,28 @@ class PostComment {
 
   bool get isReply => parentId != null;
 
+  /// Returns a human-readable time ago string
+  String get timeAgo {
+    final now = DateTime.now();
+    final difference = now.difference(createdAt);
+
+    if (difference.inDays > 365) {
+      final years = (difference.inDays / 365).floor();
+      return '${years}y ago';
+    } else if (difference.inDays > 30) {
+      final months = (difference.inDays / 30).floor();
+      return '${months}mo ago';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
   PostComment copyWith({
     String? id,
     String? postId,
@@ -67,6 +92,7 @@ class PostComment {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? authorName,
+    String? authorUsername,
     String? authorAvatarUrl,
   }) {
     return PostComment(
@@ -78,6 +104,7 @@ class PostComment {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       authorName: authorName ?? this.authorName,
+      authorUsername: authorUsername ?? this.authorUsername,
       authorAvatarUrl: authorAvatarUrl ?? this.authorAvatarUrl,
     );
   }
