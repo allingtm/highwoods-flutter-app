@@ -10,6 +10,7 @@ import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
 import 'services/notification_navigation_service.dart';
 import 'theme/app_color_palette.dart';
+import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
