@@ -9,6 +9,7 @@ import 'package:image/image.dart' as img;
 import '../models/post_category.dart';
 import '../models/post_type.dart';
 import '../models/feed/feed_models.dart';
+import '../services/r2_storage_service.dart';
 
 /// Exception thrown when image validation fails
 class ImageValidationException implements Exception {
@@ -902,7 +903,7 @@ class FeedRepository {
     return {'width': image.width, 'height': image.height};
   }
 
-  /// Uploads an image to Supabase Storage and creates a post_images record
+  /// Uploads an image to Cloudflare R2 and creates a post_images record
   /// Returns the created [PostImage]
   Future<PostImage> uploadPostImage({
     required String postId,
@@ -925,24 +926,27 @@ class FeedRepository {
       final processedBytes = await _resizeImageIfNeeded(originalBytes);
       final dimensions = _getImageDimensions(processedBytes);
 
-      // Generate unique filename and determine content type
-      final uuid = const Uuid().v4();
+      // Determine content type
       final mimeType = lookupMimeType('', headerBytes: processedBytes);
-      final extension = mimeType == 'image/png' ? 'png' : 'jpg';
       final contentType = mimeType ?? 'image/jpeg';
-      final storagePath = '$userId/$postId/$uuid.$extension';
 
-      // Upload to Supabase Storage with explicit Content-Type
-      await _supabase.storage
-          .from('post-images')
-          .uploadBinary(
-            storagePath,
-            processedBytes,
-            fileOptions: FileOptions(contentType: contentType),
-          );
+      // Get presigned URL from R2 via Edge Function
+      final r2Service = R2StorageService();
+      final presigned = await r2Service.getPresignedUploadUrl(
+        postId: postId,
+        contentType: contentType,
+      );
 
-      // Get the public URL
-      final url = _supabase.storage.from('post-images').getPublicUrl(storagePath);
+      // Upload directly to R2
+      await r2Service.uploadToR2(
+        presignedUrl: presigned.presignedUrl,
+        bytes: processedBytes,
+        contentType: contentType,
+      );
+
+      // Use the public URL and storage path from presigned response
+      final url = presigned.publicUrl;
+      final storagePath = presigned.storagePath;
 
       // Create the database record
       final response = await _supabase.from('post_images').insert({
@@ -1020,13 +1024,12 @@ class FeedRepository {
 
       final storagePath = response['storage_path'] as String;
 
-      // Delete from storage
-      await _supabase.storage.from('post-images').remove([storagePath]);
+      // Delete from R2 storage
+      final r2Service = R2StorageService();
+      await r2Service.deleteFromR2(storagePath: storagePath);
 
       // Delete the database record
       await _supabase.from('post_images').delete().eq('id', imageId);
-    } on StorageException catch (e) {
-      throw Exception('Failed to delete image from storage: ${e.message}');
     } on PostgrestException catch (e) {
       throw Exception('Failed to delete image record: ${e.message}');
     } catch (e) {
