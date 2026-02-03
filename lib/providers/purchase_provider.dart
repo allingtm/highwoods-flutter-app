@@ -27,7 +27,7 @@ class PurchaseStateNotifier extends StateNotifier<AsyncValue<CustomerInfo?>> {
   }
 
   Future<void> _loadCustomerInfo() async {
-    if (_userId == null) {
+    if (_userId == null || !PurchaseService.isConfigured) {
       state = const AsyncValue.data(null);
       return;
     }

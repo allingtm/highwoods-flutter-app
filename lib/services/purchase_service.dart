@@ -9,6 +9,11 @@ import '../core/config/revenuecat_config.dart';
 class PurchaseService {
   PurchaseService._();
 
+  static bool _isConfigured = false;
+
+  /// Whether the RevenueCat SDK has been configured
+  static bool get isConfigured => _isConfigured;
+
   /// Initialize RevenueCat SDK - call in main.dart before runApp
   static Future<void> initialize() async {
     final apiKey = RevenueCatConfig.apiKey;
@@ -25,6 +30,7 @@ class PurchaseService {
     // Configure the SDK
     final configuration = PurchasesConfiguration(apiKey);
     await Purchases.configure(configuration);
+    _isConfigured = true;
 
     debugPrint('PurchaseService: Initialized successfully');
   }
@@ -32,6 +38,7 @@ class PurchaseService {
   /// Link user to RevenueCat on login
   /// Call this after user authenticates with Supabase
   static Future<void> login(String userId) async {
+    if (!_isConfigured) return;
     try {
       await Purchases.logIn(userId);
       debugPrint('PurchaseService: User logged in: $userId');
@@ -42,6 +49,7 @@ class PurchaseService {
 
   /// Clear user data on logout
   static Future<void> logout() async {
+    if (!_isConfigured) return;
     try {
       await Purchases.logOut();
       debugPrint('PurchaseService: User logged out');
@@ -54,6 +62,7 @@ class PurchaseService {
   static void addCustomerInfoUpdateListener(
     void Function(CustomerInfo) listener,
   ) {
+    if (!_isConfigured) return;
     Purchases.addCustomerInfoUpdateListener(listener);
   }
 
@@ -61,6 +70,7 @@ class PurchaseService {
   static void removeCustomerInfoUpdateListener(
     void Function(CustomerInfo) listener,
   ) {
+    if (!_isConfigured) return;
     Purchases.removeCustomerInfoUpdateListener(listener);
   }
 }
