@@ -15,7 +15,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   int _currentPage = 0;
 
   static const _benefits = [
-    (Icons.storefront_outlined, 'assets/images/onboarding/marketplace.png', 'Marketplace', 'Buy, sell & give away locally — pickup is streets away'),
+    (Icons.storefront_outlined, 'assets/images/onboarding/marketplace.png', 'Marketplace', 'Buy, sell & give away locally. Pickup is streets away'),
     (Icons.thumb_up_outlined, 'assets/images/onboarding/recommendations.png', 'Recommendations', 'Get trusted advice from neighbours who\'ve used local services'),
     (Icons.shield_outlined, 'assets/images/onboarding/safety.png', 'Safety Alerts', 'Hear about incidents on your streets when they happen'),
     (Icons.pets_outlined, 'assets/images/onboarding/lost_and_found.png', 'Lost & Found', 'Reach people who actually walk past your street daily'),

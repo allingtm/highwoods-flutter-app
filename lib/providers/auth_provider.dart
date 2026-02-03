@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../repositories/auth_repository.dart';
 import '../services/notification_service.dart';
+import '../services/purchase_service.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
@@ -27,13 +28,17 @@ final currentUserProvider = Provider<User?>((ref) {
   return user;
 });
 
-/// Tags the user in OneSignal for targeted notifications
+/// Tags the user in OneSignal and RevenueCat when they log in
 void _tagUserForNotifications(User user) {
+  // OneSignal tagging
   NotificationService.setExternalUserId(user.id);
   NotificationService.setUserTags(
     userId: user.id,
     email: user.email,
   );
+
+  // RevenueCat user identification
+  PurchaseService.login(user.id);
 }
 
 final isAuthenticatedProvider = Provider<bool>((ref) {

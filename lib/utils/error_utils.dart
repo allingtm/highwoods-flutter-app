@@ -1,3 +1,4 @@
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Converts error objects to user-friendly messages.
@@ -15,6 +16,11 @@ String getErrorMessage(Object error) {
   // Handle Supabase Postgrest exceptions
   if (error is PostgrestException) {
     return _getPostgrestErrorMessage(error);
+  }
+
+  // Handle RevenueCat exceptions
+  if (error is PurchasesErrorCode) {
+    return _getPurchaseErrorMessage(error);
   }
 
   // Handle standard exceptions
@@ -200,4 +206,38 @@ String _getPostgrestErrorMessage(PostgrestException error) {
 
   // Default database error
   return 'An error occurred while processing your request.';
+}
+
+/// Converts RevenueCat error codes to user-friendly messages.
+String _getPurchaseErrorMessage(PurchasesErrorCode error) {
+  switch (error) {
+    case PurchasesErrorCode.purchaseCancelledError:
+      return 'Purchase was cancelled.';
+    case PurchasesErrorCode.storeProblemError:
+      return 'There was a problem with the app store. Please try again.';
+    case PurchasesErrorCode.purchaseNotAllowedError:
+      return 'Purchases are not allowed on this device.';
+    case PurchasesErrorCode.productNotAvailableForPurchaseError:
+      return 'This product is not available for purchase.';
+    case PurchasesErrorCode.productAlreadyPurchasedError:
+      return 'You already own this product.';
+    case PurchasesErrorCode.receiptAlreadyInUseError:
+      return 'This receipt is already in use by another account.';
+    case PurchasesErrorCode.invalidReceiptError:
+      return 'The receipt is invalid. Please try again.';
+    case PurchasesErrorCode.missingReceiptFileError:
+      return 'Receipt file is missing. Please restore purchases.';
+    case PurchasesErrorCode.networkError:
+      return 'Network error. Please check your connection.';
+    case PurchasesErrorCode.invalidCredentialsError:
+      return 'Invalid credentials. Please contact support.';
+    case PurchasesErrorCode.unexpectedBackendResponseError:
+      return 'Unexpected response from server. Please try again.';
+    case PurchasesErrorCode.operationAlreadyInProgressError:
+      return 'A purchase is already in progress.';
+    case PurchasesErrorCode.unknownBackendError:
+      return 'An error occurred. Please try again.';
+    default:
+      return 'Purchase failed. Please try again.';
+  }
 }

@@ -5,8 +5,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
+import '../providers/purchase_provider.dart';
 import '../providers/theme_provider.dart';
 import '../services/notification_service.dart';
+import '../utils/error_utils.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_theme_tokens.dart';
 import '../theme/app_color_palette.dart';
@@ -44,6 +46,13 @@ class SettingsScreen extends ConsumerWidget {
           _buildSectionHeader(context, 'Notifications'),
           SizedBox(height: tokens.spacingSm),
           _buildNotificationSettings(context, ref, notificationPrefs, tokens),
+
+          SizedBox(height: tokens.spacingXl),
+
+          // Subscription Section
+          _buildSectionHeader(context, 'Subscription'),
+          SizedBox(height: tokens.spacingSm),
+          _buildSubscriptionSettings(context, ref, tokens),
 
           SizedBox(height: tokens.spacingXl),
 
@@ -450,6 +459,130 @@ class SettingsScreen extends ConsumerWidget {
         );
       },
     );
+  }
+
+  Widget _buildSubscriptionSettings(
+    BuildContext context,
+    WidgetRef ref,
+    AppThemeTokens tokens,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isSupporter = ref.watch(isSupporterProvider);
+    final purchaseState = ref.watch(purchaseStateProvider);
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+      ),
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(
+              isSupporter ? Icons.star : Icons.star_border,
+              color: isSupporter ? Colors.amber : colorScheme.primary,
+            ),
+            title: Text(
+              isSupporter ? 'Highwoods Supporter' : 'Become a Supporter',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text(
+              isSupporter
+                  ? 'Thank you for supporting the community!'
+                  : 'Support the Highwoods community app',
+              style: TextStyle(color: context.colors.textSecondary, fontSize: 12),
+            ),
+            trailing: isSupporter
+                ? null
+                : FilledButton(
+                    onPressed: purchaseState.isLoading
+                        ? null
+                        : () => _presentPaywall(context, ref),
+                    child: const Text('Upgrade'),
+                  ),
+          ),
+          if (isSupporter) ...[
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.manage_accounts, color: colorScheme.primary),
+              title: const Text(
+                'Manage Subscription',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              trailing: Icon(Icons.chevron_right, color: context.colors.textSecondary),
+              onTap: () => _presentCustomerCenter(context, ref),
+            ),
+          ],
+          const Divider(height: 1),
+          ListTile(
+            leading: Icon(Icons.restore, color: colorScheme.primary),
+            title: const Text(
+              'Restore Purchases',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            trailing: purchaseState.isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.chevron_right, color: context.colors.textSecondary),
+            onTap: purchaseState.isLoading
+                ? null
+                : () => _restorePurchases(context, ref),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _presentPaywall(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(purchaseStateProvider.notifier).presentPaywall();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(getErrorMessage(e))),
+        );
+      }
+    }
+  }
+
+  Future<void> _presentCustomerCenter(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(purchaseStateProvider.notifier).presentCustomerCenter();
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(getErrorMessage(e))),
+        );
+      }
+    }
+  }
+
+  Future<void> _restorePurchases(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(purchaseStateProvider.notifier).restorePurchases();
+      final isSupporter = ref.read(isSupporterProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isSupporter
+                  ? 'Purchases restored successfully!'
+                  : 'No previous purchases found.',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(getErrorMessage(e))),
+        );
+      }
+    }
   }
 
   Future<void> _showSignOutDialog(BuildContext context, WidgetRef ref) async {

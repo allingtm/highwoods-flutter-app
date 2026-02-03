@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
 import '../services/notification_service.dart';
+import '../services/purchase_service.dart';
 
 class AuthRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -147,6 +148,8 @@ class AuthRepository {
     try {
       // Clear notification user data
       await NotificationService.logout();
+      // Clear purchase user data
+      await PurchaseService.logout();
       await _supabase.auth.signOut();
     } on AuthException catch (e) {
       throw Exception('Failed to sign out: ${e.message}');
@@ -172,6 +175,8 @@ class AuthRepository {
 
       // Clear notification user data
       await NotificationService.logout();
+      // Clear purchase user data
+      await PurchaseService.logout();
 
       // Sign out to clear local session
       await _supabase.auth.signOut();

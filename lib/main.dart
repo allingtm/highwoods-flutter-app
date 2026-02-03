@@ -8,6 +8,7 @@ import 'core/deep_link_handler.dart';
 import 'core/router/app_router.dart';
 import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
+import 'services/purchase_service.dart';
 import 'services/notification_navigation_service.dart';
 import 'theme/app_color_palette.dart';
 
@@ -32,6 +33,9 @@ Future<void> main() async {
 
   // Initialize push notifications (OneSignal)
   await NotificationService.initialize();
+
+  // Initialize in-app purchases (RevenueCat)
+  await PurchaseService.initialize();
 
   runApp(const ProviderScope(child: MainApp()));
 }

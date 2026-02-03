@@ -823,17 +823,21 @@ class FeedRepository {
       final processedBytes = await _resizeImageIfNeeded(originalBytes);
       final dimensions = _getImageDimensions(processedBytes);
 
-      // Generate unique filename
+      // Generate unique filename and determine content type
       final uuid = const Uuid().v4();
-      final extension = lookupMimeType('', headerBytes: processedBytes) == 'image/png'
-          ? 'png'
-          : 'jpg';
+      final mimeType = lookupMimeType('', headerBytes: processedBytes);
+      final extension = mimeType == 'image/png' ? 'png' : 'jpg';
+      final contentType = mimeType ?? 'image/jpeg';
       final storagePath = '$userId/$postId/$uuid.$extension';
 
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage with explicit Content-Type
       await _supabase.storage
           .from('post-images')
-          .uploadBinary(storagePath, processedBytes);
+          .uploadBinary(
+            storagePath,
+            processedBytes,
+            fileOptions: FileOptions(contentType: contentType),
+          );
 
       // Get the public URL
       final url = _supabase.storage.from('post-images').getPublicUrl(storagePath);
