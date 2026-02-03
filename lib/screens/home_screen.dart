@@ -9,8 +9,8 @@ import '../theme/app_theme_tokens.dart';
 import '../theme/app_colors.dart';
 import 'feed/feed_screen.dart';
 import 'directory_screen.dart';
-import 'whats_on_screen.dart';
 import 'connections_screen.dart';
+import 'connections/messages_list_screen.dart';
 
 /// Main home screen with bottom navigation and side drawer
 class HomeScreen extends ConsumerStatefulWidget {
@@ -74,7 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         children: [
           FeedScreen(onMenuTap: _openDrawer),
           DirectoryScreen(onMenuTap: _openDrawer),
-          WhatsOnScreen(onMenuTap: _openDrawer),
+          MessagesListScreen(onMenuTap: _openDrawer),
           ConnectionsScreen(onMenuTap: _openDrawer),
         ],
       ),
@@ -338,7 +338,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           children: [
             _buildNavItem(context, icon: Icons.forum_outlined, selectedIcon: Icons.forum, label: 'Social', index: 0),
             _buildNavItem(context, icon: Icons.menu_book_outlined, selectedIcon: Icons.menu_book, label: 'Business', index: 1),
-            _buildNavItem(context, icon: Icons.event_outlined, selectedIcon: Icons.event, label: 'Calendar', index: 2),
+            _buildNavItem(context, icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble, label: 'Messages', index: 2),
             _buildNavItem(context, icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Network', index: 3),
           ],
         ),

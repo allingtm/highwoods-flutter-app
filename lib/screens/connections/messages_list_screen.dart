@@ -8,7 +8,10 @@ import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
 
 class MessagesListScreen extends ConsumerWidget {
-  const MessagesListScreen({super.key});
+  const MessagesListScreen({super.key, this.onMenuTap});
+
+  /// Callback to open the side menu drawer
+  final VoidCallback? onMenuTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,6 +21,13 @@ class MessagesListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: onMenuTap != null
+            ? IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: onMenuTap,
+                tooltip: 'Open menu',
+              )
+            : null,
         title: const Text('Messages'),
       ),
       body: RefreshIndicator(
@@ -82,7 +92,7 @@ class MessagesListScreen extends ConsumerWidget {
             ),
             SizedBox(height: tokens.spacingXl),
             OutlinedButton.icon(
-              onPressed: () => context.pop(),
+              onPressed: () => context.go('/home?tab=3'),
               icon: const Icon(Icons.people),
               label: const Text('View Connections'),
             ),

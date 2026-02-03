@@ -57,10 +57,6 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
           children: [
             // Pending Requests Section
             _buildPendingRequestsCard(context, tokens, colorScheme),
-            SizedBox(height: tokens.spacingLg),
-
-            // Messages Section
-            _buildMessagesCard(context, tokens, colorScheme),
             SizedBox(height: tokens.spacingXl),
 
             // Friends Wall Header
@@ -148,59 +144,6 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
         ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => _showPendingRequestsSheet(context),
-      ),
-    );
-  }
-
-  Widget _buildMessagesCard(
-    BuildContext context,
-    AppThemeTokens tokens,
-    ColorScheme colorScheme,
-  ) {
-    final unreadCount = ref.watch(unreadMessagesCountProvider);
-
-    return Card(
-      child: ListTile(
-        leading: Stack(
-          children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              color: colorScheme.primary,
-              size: tokens.iconMd,
-            ),
-            if (unreadCount > 0)
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: EdgeInsets.all(tokens.spacingXs),
-                  decoration: BoxDecoration(
-                    color: colorScheme.error,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
-                  child: Text(
-                    unreadCount.toString(),
-                    style: TextStyle(
-                      color: colorScheme.onError,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        title: const Text('Messages'),
-        subtitle: Text(
-          unreadCount > 0 ? '$unreadCount unread' : 'No new messages',
-          style: TextStyle(
-            color: unreadCount > 0 ? colorScheme.primary : colorScheme.onSurfaceVariant,
-          ),
-        ),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: () => context.push('/connections/messages'),
       ),
     );
   }

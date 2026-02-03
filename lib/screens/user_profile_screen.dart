@@ -18,9 +18,10 @@ final otherUserProfileProvider =
 });
 
 class UserProfileScreen extends ConsumerStatefulWidget {
-  const UserProfileScreen({super.key, required this.userId});
+  const UserProfileScreen({super.key, required this.userId, this.hideMessageButton = false});
 
   final String userId;
+  final bool hideMessageButton;
 
   @override
   ConsumerState<UserProfileScreen> createState() => _UserProfileScreenState();
@@ -88,6 +89,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                             profile: profile,
                             isOwnProfile: isOwnProfile,
                             isLoggedIn: currentUser != null,
+                            hideMessageButton: widget.hideMessageButton,
                             onMessageTap: () {
                               context.push('/connections/conversation/${widget.userId}');
                             },
@@ -179,12 +181,14 @@ class _ProfileHeader extends StatelessWidget {
     required this.profile,
     required this.isOwnProfile,
     required this.isLoggedIn,
+    this.hideMessageButton = false,
     this.onMessageTap,
   });
 
   final UserProfile profile;
   final bool isOwnProfile;
   final bool isLoggedIn;
+  final bool hideMessageButton;
   final VoidCallback? onMessageTap;
 
   @override
@@ -249,7 +253,7 @@ class _ProfileHeader extends StatelessWidget {
             ),
           ],
           // Message button
-          if (isLoggedIn && !isOwnProfile) ...[
+          if (isLoggedIn && !isOwnProfile && !hideMessageButton) ...[
             SizedBox(height: tokens.spacingMd),
             FilledButton.icon(
               onPressed: onMessageTap,

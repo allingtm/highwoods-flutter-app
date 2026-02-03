@@ -114,16 +114,6 @@ class DeepLinkHandler {
             }
             break;
 
-          case 'whatson':
-            // What's On / Events: /whatson/event/{eventId}
-            if (pathSegments.length >= 3 && pathSegments[1] == 'event') {
-              final eventId = pathSegments[2];
-              _router.go('/whatson/event/$eventId');
-            } else {
-              _router.go('/home?tab=2');
-            }
-            break;
-
           case 'connections':
             // Connections: /connections/conversation/{userId}
             if (pathSegments.length >= 3 && pathSegments[1] == 'conversation') {
@@ -131,10 +121,15 @@ class DeepLinkHandler {
               _router.go('/connections/conversation/$userId');
             } else if (pathSegments.length >= 2 &&
                 pathSegments[1] == 'messages') {
-              _router.go('/connections/messages');
+              _router.go('/home?tab=2'); // Messages tab
             } else {
-              _router.go('/home?tab=3');
+              _router.go('/home?tab=3'); // Network tab
             }
+            break;
+
+          case 'messages':
+            // Messages tab
+            _router.go('/home?tab=2');
             break;
 
           case 'directory':

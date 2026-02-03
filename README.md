@@ -78,12 +78,6 @@ Includes job type (one-time, recurring, part-time, full-time), pay rates, requir
 - **Track Invitations** - Monitor pending and accepted invites
 - **Custom Messages** - Personalize invitation notes
 
-### Events Calendar
-- **What's On** - Calendar view of community events
-- **Featured Events** - Highlighted community gatherings
-- **RSVP Management** - Going, Interested, or Not Going
-- **Attendee Lists** - See who's attending
-
 ### Business Directory
 - **Local Listings** - Discover neighbourhood businesses and services
 - **Categories** - Services, Events, Organisations, Products

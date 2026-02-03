@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/message.dart';
@@ -429,7 +430,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 title: const Text('View Profile'),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to profile
+                  context.push('/user/${widget.otherUserId}?fromConversation=true');
                 },
               ),
               ListTile(

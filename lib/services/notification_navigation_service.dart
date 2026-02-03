@@ -205,16 +205,10 @@ class NotificationNavigationService extends ChangeNotifier {
         if (targetId != null) {
           return '/connections/conversation/$targetId';
         }
-        return '/home?tab=3'; // Fallback to connections tab
+        return '/home?tab=2'; // Fallback to messages tab
 
       case 'connection':
-        return '/home?tab=3'; // Connections tab
-
-      case 'event':
-        if (targetId != null) {
-          return '/whatson/event/$targetId';
-        }
-        return '/home?tab=2'; // Fallback to What's On tab
+        return '/home?tab=3'; // Network tab
 
       default:
         debugPrint('NotificationNavigationService: Unknown notification type: $type');
@@ -235,11 +229,6 @@ class NotificationNavigationService extends ChangeNotifier {
       return normalizedPath;
     }
 
-    // Events - direct navigation
-    if (normalizedPath.startsWith('/whatson/event/')) {
-      return normalizedPath;
-    }
-
     // Conversations - direct navigation
     if (normalizedPath.startsWith('/connections/conversation/')) {
       return normalizedPath;
@@ -252,10 +241,10 @@ class NotificationNavigationService extends ChangeNotifier {
     if (normalizedPath == '/directory' || normalizedPath.startsWith('/directory/')) {
       return '/home?tab=1';
     }
-    if (normalizedPath == '/whatson' || normalizedPath == '/events') {
+    if (normalizedPath == '/messages') {
       return '/home?tab=2';
     }
-    if (normalizedPath == '/connections' || normalizedPath == '/messages') {
+    if (normalizedPath == '/connections') {
       return '/home?tab=3';
     }
 

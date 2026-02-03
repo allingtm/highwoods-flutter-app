@@ -7,11 +7,19 @@ import '../../models/post_type.dart';
 import '../../models/feed/feed_models.dart';
 import '../../providers/feed_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_theme_tokens.dart';
 import '../../utils/error_utils.dart';
 import '../../utils/post_validators.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/feed/image_picker_widget.dart';
+
+/// Wizard steps for creating a post
+enum CreatePostStep {
+  categorySelection,
+  subCategorySelection,
+  postDetails,
+}
 
 /// Screen for creating a new community post
 class CreatePostScreen extends ConsumerStatefulWidget {
@@ -27,6 +35,10 @@ class CreatePostScreen extends ConsumerStatefulWidget {
 class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   final _formKey = GlobalKey<FormState>();
   final _contentController = TextEditingController();
+
+  // Wizard state
+  CreatePostStep _currentStep = CreatePostStep.categorySelection;
+  bool _isDiscussionFlow = false;
 
   // Form state
   PostCategory? _selectedCategory;
@@ -75,7 +87,72 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   void initState() {
     super.initState();
     // Pre-select category if provided (e.g., from filtered feed)
-    _selectedCategory = widget.initialCategory;
+    if (widget.initialCategory != null) {
+      _selectedCategory = widget.initialCategory;
+      _currentStep = CreatePostStep.subCategorySelection;
+    }
+  }
+
+  // Navigation logic methods
+
+  void _onDiscussionSelected() {
+    setState(() {
+      _isDiscussionFlow = true;
+      _selectedCategory = PostCategory.social;
+      _selectedPostType = PostType.discussion;
+      _currentStep = CreatePostStep.postDetails;
+      _errorMessage = null;
+    });
+  }
+
+  void _onCategorySelected(PostCategory category) {
+    setState(() {
+      _isDiscussionFlow = false;
+      _selectedCategory = category;
+      _selectedPostType = null;
+      _currentStep = CreatePostStep.subCategorySelection;
+      _errorMessage = null;
+    });
+  }
+
+  void _onPostTypeSelected(PostType type) {
+    setState(() {
+      _selectedPostType = type;
+      _currentStep = CreatePostStep.postDetails;
+      _errorMessage = null;
+    });
+  }
+
+  void _goBack() {
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _errorMessage = null;
+      if (_currentStep == CreatePostStep.postDetails) {
+        if (_isDiscussionFlow) {
+          _currentStep = CreatePostStep.categorySelection;
+          _selectedCategory = null;
+          _selectedPostType = null;
+          _isDiscussionFlow = false;
+        } else {
+          _currentStep = CreatePostStep.subCategorySelection;
+          _selectedPostType = null;
+        }
+      } else if (_currentStep == CreatePostStep.subCategorySelection) {
+        _currentStep = CreatePostStep.categorySelection;
+        _selectedCategory = null;
+      }
+    });
+  }
+
+  String _getStepTitle() {
+    switch (_currentStep) {
+      case CreatePostStep.categorySelection:
+        return 'Create Post';
+      case CreatePostStep.subCategorySelection:
+        return 'Select Type';
+      case CreatePostStep.postDetails:
+        return 'Post Details';
+    }
   }
 
   @override
@@ -101,133 +178,201 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Post'),
+        title: Text(_getStepTitle()),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
-          onPressed: () => context.pop(),
+          icon: Icon(
+            _currentStep == CreatePostStep.categorySelection
+                ? Icons.close_rounded
+                : Icons.arrow_back_rounded,
+          ),
+          onPressed: _currentStep == CreatePostStep.categorySelection
+              ? () => context.pop()
+              : _goBack,
         ),
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: EdgeInsets.all(tokens.spacingLg),
-          children: [
-            // Error message
-            if (_errorMessage != null) ...[
-              Container(
-                padding: EdgeInsets.all(tokens.spacingMd),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(tokens.radiusMd),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      color: theme.colorScheme.onErrorContainer,
-                    ),
-                    SizedBox(width: tokens.spacingSm),
-                    Expanded(
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(color: theme.colorScheme.onErrorContainer),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: tokens.spacingLg),
-            ],
-
-            // Step 1: Category selection
-            Text(
-              'What would you like to share?',
-              style: theme.textTheme.titleMedium,
-            ),
-            SizedBox(height: tokens.spacingMd),
-            _CategorySelector(
-              selectedCategory: _selectedCategory,
-              onCategorySelected: (category) {
-                setState(() {
-                  _selectedCategory = category;
-                  _selectedPostType = null;
-                });
-              },
-            ),
-
-            // Step 2: Post type selection
-            if (_selectedCategory != null) ...[
-              SizedBox(height: tokens.spacingXl),
-              Text(
-                'What type of ${_selectedCategory!.displayName.toLowerCase()}?',
-                style: theme.textTheme.titleMedium,
-              ),
-              SizedBox(height: tokens.spacingMd),
-              _PostTypeSelector(
-                category: _selectedCategory!,
-                selectedType: _selectedPostType,
-                onTypeSelected: (type) {
-                  setState(() {
-                    _selectedPostType = type;
-                  });
-                },
-              ),
-            ],
-
-            // Step 3: Content fields
-            if (_selectedPostType != null) ...[
-              SizedBox(height: tokens.spacingXl),
-              Text(
-                'Post details',
-                style: theme.textTheme.titleMedium,
-              ),
-              SizedBox(height: tokens.spacingMd),
-
-              // Content field
-              AppTextField.postContent(
-                controller: _contentController,
-                validator: PostValidators.body().call,
-                inputFormatters: [SanitizingTextInputFormatter()],
-              ),
-              SizedBox(height: tokens.spacingLg),
-
-              // Image picker
-              ImagePickerWidget(
-                images: _selectedImages,
-                maxImages: 5,
-                onImagesChanged: (images) {
-                  setState(() {
-                    _selectedImages = images;
-                  });
-                },
-                onError: (error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(error),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                },
-              ),
-              SizedBox(height: tokens.spacingLg),
-
-              // Category-specific fields
-              _buildCategorySpecificFields(),
-            ],
-
-            // Submit button
-            if (_selectedPostType != null) ...[
-              SizedBox(height: tokens.spacingXl),
-              AppButton(
-                text: 'Create Post',
-                isLoading: _isLoading,
-                onPressed: _submitPost,
-              ),
-              SizedBox(height: tokens.spacing2xl),
-            ],
-          ],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: _buildCurrentStep(tokens, theme),
         ),
       ),
+    );
+  }
+
+  Widget _buildCurrentStep(AppThemeTokens tokens, ThemeData theme) {
+    switch (_currentStep) {
+      case CreatePostStep.categorySelection:
+        return _buildCategorySelectionStep(tokens, theme);
+      case CreatePostStep.subCategorySelection:
+        return _buildSubCategorySelectionStep(tokens, theme);
+      case CreatePostStep.postDetails:
+        return _buildPostDetailsStep(tokens, theme);
+    }
+  }
+
+  Widget _buildCategorySelectionStep(AppThemeTokens tokens, ThemeData theme) {
+    return ListView(
+      key: const ValueKey('categorySelection'),
+      padding: EdgeInsets.all(tokens.spacingLg),
+      children: [
+        Text(
+          'What would you like to share?',
+          style: theme.textTheme.titleMedium,
+        ),
+        SizedBox(height: tokens.spacingMd),
+        _CategorySelector(
+          selectedCategory: _selectedCategory,
+          isDiscussionSelected: _isDiscussionFlow,
+          onCategorySelected: _onCategorySelected,
+          onDiscussionSelected: _onDiscussionSelected,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubCategorySelectionStep(AppThemeTokens tokens, ThemeData theme) {
+    return ListView(
+      key: const ValueKey('subCategorySelection'),
+      padding: EdgeInsets.all(tokens.spacingLg),
+      children: [
+        // Category header with icon
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(tokens.spacingSm),
+              decoration: BoxDecoration(
+                color: _selectedCategory!.color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
+              ),
+              child: Icon(
+                _selectedCategory!.icon,
+                color: _selectedCategory!.color,
+                size: tokens.iconSm,
+              ),
+            ),
+            SizedBox(width: tokens.spacingSm),
+            Text(
+              _selectedCategory!.displayName,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: _selectedCategory!.color,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: tokens.spacingLg),
+        Text(
+          'What type of ${_selectedCategory!.displayName.toLowerCase()}?',
+          style: theme.textTheme.titleMedium,
+        ),
+        SizedBox(height: tokens.spacingMd),
+        _PostTypeSelector(
+          category: _selectedCategory!,
+          selectedType: _selectedPostType,
+          onTypeSelected: _onPostTypeSelected,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPostDetailsStep(AppThemeTokens tokens, ThemeData theme) {
+    return ListView(
+      key: const ValueKey('postDetails'),
+      padding: EdgeInsets.all(tokens.spacingLg),
+      children: [
+        // Error message
+        if (_errorMessage != null) ...[
+          Container(
+            padding: EdgeInsets.all(tokens.spacingMd),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+                SizedBox(width: tokens.spacingSm),
+                Expanded(
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: tokens.spacingLg),
+        ],
+
+        // Post type header
+        Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(tokens.spacingSm),
+              decoration: BoxDecoration(
+                color: _selectedCategory!.color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(tokens.radiusMd),
+              ),
+              child: Icon(
+                _selectedCategory!.icon,
+                color: _selectedCategory!.color,
+                size: tokens.iconSm,
+              ),
+            ),
+            SizedBox(width: tokens.spacingSm),
+            Text(
+              _selectedPostType!.displayName,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: _selectedCategory!.color,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: tokens.spacingLg),
+
+        // Content field
+        AppTextField.postContent(
+          controller: _contentController,
+          validator: PostValidators.body().call,
+          inputFormatters: [SanitizingTextInputFormatter()],
+        ),
+        SizedBox(height: tokens.spacingLg),
+
+        // Image picker
+        ImagePickerWidget(
+          images: _selectedImages,
+          maxImages: 5,
+          onImagesChanged: (images) {
+            setState(() {
+              _selectedImages = images;
+            });
+          },
+          onError: (error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(error),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+        ),
+        SizedBox(height: tokens.spacingLg),
+
+        // Category-specific fields
+        _buildCategorySpecificFields(),
+
+        // Submit button
+        SizedBox(height: tokens.spacingXl),
+        AppButton(
+          text: 'Create Post',
+          isLoading: _isLoading,
+          onPressed: _submitPost,
+        ),
+        SizedBox(height: tokens.spacing2xl),
+      ],
     );
   }
 
@@ -448,35 +593,51 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 }
 
-/// Grid of category cards for selection
+/// Category selection step with Discussion tile at top
 class _CategorySelector extends StatelessWidget {
   const _CategorySelector({
     required this.selectedCategory,
+    required this.isDiscussionSelected,
     required this.onCategorySelected,
+    required this.onDiscussionSelected,
   });
 
   final PostCategory? selectedCategory;
+  final bool isDiscussionSelected;
   final ValueChanged<PostCategory> onCategorySelected;
+  final VoidCallback onDiscussionSelected;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
 
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: tokens.spacingMd,
-      crossAxisSpacing: tokens.spacingMd,
-      childAspectRatio: 1.5,
-      children: PostCategory.values.map((category) {
-        final isSelected = selectedCategory == category;
-        return _CategoryCard(
-          category: category,
-          isSelected: isSelected,
-          onTap: () => onCategorySelected(category),
-        );
-      }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Full-width Discussion tile at top
+        _DiscussionTile(
+          isSelected: isDiscussionSelected,
+          onTap: onDiscussionSelected,
+        ),
+        SizedBox(height: tokens.spacingMd),
+        // 6 category tiles in 2x3 grid
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: tokens.spacingMd,
+          crossAxisSpacing: tokens.spacingMd,
+          childAspectRatio: 1.5,
+          children: PostCategory.values.map((category) {
+            final isSelected = selectedCategory == category && !isDiscussionSelected;
+            return _CategoryCard(
+              category: category,
+              isSelected: isSelected,
+              onTap: () => onCategorySelected(category),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 }
@@ -536,6 +697,68 @@ class _CategoryCard extends StatelessWidget {
   }
 }
 
+/// Full-width tile for Discussion option at top of category selection
+class _DiscussionTile extends StatelessWidget {
+  const _DiscussionTile({
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  // Discussion uses the social category color (purple)
+  static const _color = Color(0xFF8B5CF6);
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final theme = Theme.of(context);
+
+    return Material(
+      color: isSelected ? _color.withValues(alpha: 0.15) : theme.colorScheme.surfaceContainerLow,
+      borderRadius: BorderRadius.circular(tokens.radiusLg),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radiusLg),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacingLg,
+            vertical: tokens.spacingMd,
+          ),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: isSelected ? _color : theme.colorScheme.outline.withValues(alpha: 0.3),
+              width: isSelected ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.forum_rounded,
+                color: isSelected ? _color : theme.colorScheme.onSurfaceVariant,
+                size: tokens.iconMd,
+              ),
+              SizedBox(height: tokens.spacingSm),
+              Text(
+                'Discussion',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: isSelected ? _color : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// List of post types for selected category
 class _PostTypeSelector extends StatelessWidget {
   const _PostTypeSelector({
@@ -552,7 +775,10 @@ class _PostTypeSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final theme = Theme.of(context);
-    final types = PostType.forCategory(category);
+    // Filter out discussion from social category since it's now a top-level option
+    final types = PostType.forCategory(category)
+        .where((t) => t != PostType.discussion)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

@@ -20,7 +20,6 @@ import '../../screens/connections/invite_screen.dart';
 import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
 import '../../screens/directory/promo_detail_screen.dart';
-import '../../screens/whatson/event_detail_screen.dart';
 import '../../screens/settings_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_navigation_service.dart';
@@ -188,7 +187,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'user-profile',
         builder: (context, state) {
           final userId = state.pathParameters['userId']!;
-          return UserProfileScreen(userId: userId);
+          final hideMessageButton = state.uri.queryParameters['fromConversation'] == 'true';
+          return UserProfileScreen(userId: userId, hideMessageButton: hideMessageButton);
         },
       ),
       GoRoute(
@@ -232,15 +232,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final promoId = state.pathParameters['promoId']!;
           return PromoDetailScreen(promoId: promoId);
-        },
-      ),
-      // What's On routes
-      GoRoute(
-        path: '/whatson/event/:eventId',
-        name: 'event-detail',
-        builder: (context, state) {
-          final eventId = state.pathParameters['eventId']!;
-          return EventDetailScreen(eventId: eventId);
         },
       ),
     ],
