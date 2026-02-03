@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:form_field_validator/form_field_validator.dart';
@@ -245,10 +244,24 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AppInfoContainer(
-          icon: Icons.lock_outline,
+        // Invitation Only card with border (no background)
+        Container(
+          padding: EdgeInsets.all(tokens.spacingLg),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.colorScheme.outline,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
+          ),
           child: Column(
             children: [
+              Icon(
+                Icons.lock_outline,
+                size: tokens.iconLg,
+                color: theme.colorScheme.primary,
+              ),
+              SizedBox(height: tokens.spacingMd),
               Text(
                 'Invitation Only',
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -257,13 +270,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 ),
               ),
               SizedBox(height: tokens.spacingSm),
-              const Text(
+              Text(
                 'Highwoods is an invitation-only community. Enter the invite code you received, or ask someone you know with an account to send you an invitation.',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
         ),
-        SizedBox(height: tokens.spacingXl),
+        SizedBox(height: tokens.spacing2xl),
+        // Invite code input below the card
         TextFormField(
           controller: _codeController,
           textCapitalization: TextCapitalization.characters,

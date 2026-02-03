@@ -357,15 +357,20 @@ Future<void> cancelInvitation(
 }
 
 /// Send a message
+///
+/// If [postId] is provided, allows messaging post authors without requiring
+/// a connection (for marketplace, jobs, lost & found inquiries).
 Future<Message> sendMessage(
   WidgetRef ref, {
   required String recipientId,
   required String content,
+  String? postId,
 }) async {
   final repository = ref.read(connectionsRepositoryProvider);
   final message = await repository.sendMessage(
     recipientId: recipientId,
     content: content,
+    postId: postId,
   );
 
   // Update conversations

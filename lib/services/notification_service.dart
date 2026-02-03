@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'notification_navigation_service.dart';
 
 /// Service for managing push notifications via OneSignal
 class NotificationService {
@@ -10,9 +12,6 @@ class NotificationService {
   NotificationService._();
 
   static String get _appId => dotenv.env['ONESIGNAL_APP_ID'] ?? '';
-
-  /// Pending navigation data from notification click
-  static Map<String, String?>? _pendingNavigation;
 
   /// Initialize OneSignal - call in main.dart before runApp
   static Future<void> initialize() async {
@@ -76,10 +75,29 @@ class NotificationService {
   /// Check if notifications are enabled
   static bool get hasPermission => OneSignal.Notifications.permission;
 
-  /// Set external user ID for targeting
+  /// Set external user ID for targeting and save player ID to Supabase
   /// Call this after user logs in
   static Future<void> setExternalUserId(String userId) async {
     await OneSignal.login(userId);
+
+    // Save OneSignal player ID to Supabase for server-side notifications
+    await _savePlayerIdToSupabase(userId);
+  }
+
+  /// Save the OneSignal player ID to the user's profile in Supabase
+  static Future<void> _savePlayerIdToSupabase(String userId) async {
+    try {
+      final playerId = OneSignal.User.pushSubscription.id;
+      if (playerId != null && playerId.isNotEmpty) {
+        await Supabase.instance.client
+            .from('profiles')
+            .update({'onesignal_player_id': playerId})
+            .eq('id', userId);
+        debugPrint('NotificationService: Saved player ID to Supabase');
+      }
+    } catch (e) {
+      debugPrint('NotificationService: Failed to save player ID: $e');
+    }
   }
 
   /// Set user tags for targeted notifications
@@ -121,34 +139,28 @@ class NotificationService {
     await OneSignal.logout();
   }
 
-  /// Handle notification click - stores navigation data for later
+  /// Handle notification click - delegates to NotificationNavigationService
   static void _onNotificationClick(OSNotificationClickEvent event) {
-    final data = event.notification.additionalData;
-    if (data == null) return;
-
-    final type = data['type'] as String?;
-    final targetId = data['target_id'] as String?;
-
-    // Store for navigation (will be consumed by home screen)
-    _pendingNavigation = {'type': type, 'target_id': targetId};
+    debugPrint('NotificationService: Notification clicked');
+    debugPrint('NotificationService: additionalData = ${event.notification.additionalData}');
+    NotificationNavigationService.instance.handleNotificationClick(
+      event.notification.additionalData,
+    );
   }
 
-  /// Handle foreground notifications - show even when app is open
+  /// Handle foreground notifications - suppress system notification and show in-app snackbar
   static void _onForegroundNotification(
     OSNotificationWillDisplayEvent event,
   ) {
-    // Show the notification even when app is in foreground
-    event.notification.display();
-  }
+    debugPrint('NotificationService: Foreground notification received');
+    // Prevent system notification banner
+    event.preventDefault();
 
-  /// Get and clear pending navigation from notification click
-  /// Returns null if no pending navigation
-  static Map<String, String?>? consumePendingNavigation() {
-    final nav = _pendingNavigation;
-    _pendingNavigation = null;
-    return nav;
+    // Queue for in-app snackbar display
+    NotificationNavigationService.instance.showForegroundNotification(
+      title: event.notification.title ?? 'Notification',
+      body: event.notification.body ?? '',
+      additionalData: event.notification.additionalData,
+    );
   }
-
-  /// Check if there's pending navigation
-  static bool get hasPendingNavigation => _pendingNavigation != null;
 }

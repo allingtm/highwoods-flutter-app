@@ -1,9 +1,10 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_profile_provider.dart';
-import '../services/notification_service.dart';
+import '../services/notification_navigation_service.dart';
 import '../theme/app_theme_tokens.dart';
 import '../theme/app_colors.dart';
 import 'feed/feed_screen.dart';
@@ -13,7 +14,10 @@ import 'connections_screen.dart';
 
 /// Main home screen with bottom navigation and side drawer
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.initialTab = 0});
+
+  /// Initial tab index for deep link navigation
+  final int initialTab;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -21,17 +25,14 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
-  int _selectedIndex = 0;
+  late int _selectedIndex;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialTab;
     WidgetsBinding.instance.addObserver(this);
-    // Check for pending notification navigation on initial load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _handlePendingNotification();
-    });
   }
 
   @override
@@ -41,40 +42,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      _handlePendingNotification();
+  void didUpdateWidget(HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Handle tab changes from notification deep links when already mounted
+    if (oldWidget.initialTab != widget.initialTab) {
+      setState(() {
+        _selectedIndex = widget.initialTab;
+      });
     }
   }
 
-  void _handlePendingNotification() {
-    final nav = NotificationService.consumePendingNavigation();
-    if (nav == null) return;
-
-    final type = nav['type'];
-    final targetId = nav['target_id'];
-
-    if (!mounted) return;
-
-    switch (type) {
-      case 'post':
-        if (targetId != null) context.push('/post/$targetId');
-        break;
-      case 'message':
-        if (targetId != null) context.push('/connections/conversation/$targetId');
-        break;
-      case 'connection':
-        // Navigate to connections tab
-        setState(() => _selectedIndex = 3);
-        break;
-      case 'event':
-        if (targetId != null) context.push('/whatson/event/$targetId');
-        break;
-      case 'comment':
-        // Comment notification - navigate to the post
-        if (targetId != null) context.push('/post/$targetId');
-        break;
-    }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // App lifecycle handling - can be extended for other purposes
   }
 
   void _openDrawer() {
@@ -213,6 +193,41 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     context.push('/connections/invite');
                   },
                 ),
+                // Debug section - only visible in debug builds
+                if (kDebugMode) ...[
+                  const Divider(),
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacingLg,
+                      vertical: tokens.spacingSm,
+                    ),
+                    child: Text(
+                      'Debug',
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.notifications_outlined,
+                    label: 'Test Notification',
+                    onTap: () {
+                      Navigator.pop(context);
+                      // Trigger a test foreground notification
+                      NotificationNavigationService.instance.showForegroundNotification(
+                        title: 'Test Notification',
+                        body: 'This is a test notification to verify the snackbar display.',
+                        additionalData: {
+                          'type': 'post',
+                          'target_id': 'test-post-id',
+                        },
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),

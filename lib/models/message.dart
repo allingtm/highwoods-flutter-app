@@ -12,6 +12,9 @@ class Message {
   /// The sender's profile (populated from join)
   final UserProfile? sender;
 
+  /// Optional reference to the post that initiated this conversation
+  final String? postId;
+
   Message({
     required this.id,
     required this.senderId,
@@ -20,6 +23,7 @@ class Message {
     this.readAt,
     required this.createdAt,
     this.sender,
+    this.postId,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -35,6 +39,7 @@ class Message {
       sender: json['sender'] != null
           ? UserProfile.fromJson(json['sender'] as Map<String, dynamic>)
           : null,
+      postId: json['post_id'] as String?,
     );
   }
 
@@ -46,6 +51,7 @@ class Message {
       'content': content,
       if (readAt != null) 'read_at': readAt!.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
+      if (postId != null) 'post_id': postId,
     };
   }
 
@@ -57,6 +63,7 @@ class Message {
     DateTime? readAt,
     DateTime? createdAt,
     UserProfile? sender,
+    String? postId,
   }) {
     return Message(
       id: id ?? this.id,
@@ -66,6 +73,7 @@ class Message {
       readAt: readAt ?? this.readAt,
       createdAt: createdAt ?? this.createdAt,
       sender: sender ?? this.sender,
+      postId: postId ?? this.postId,
     );
   }
 

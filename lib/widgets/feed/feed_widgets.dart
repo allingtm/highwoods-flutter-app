@@ -10,3 +10,5 @@ export 'image_picker_widget.dart';
 export 'threaded_comment_list.dart';
 export 'reaction_picker_sheet.dart';
 export 'post_interactions.dart';
+export 'message_author_button.dart';
+export 'post_message_composer.dart';
