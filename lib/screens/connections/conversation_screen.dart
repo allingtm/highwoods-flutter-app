@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/message.dart';
 import '../../models/message_report.dart';
 import '../../models/user_profile.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/connections_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
@@ -62,6 +63,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         setState(() => _otherUser = conv.otherUser);
         return;
       }
+    }
+
+    // Fetch from database as fallback
+    try {
+      final authRepository = ref.read(authRepositoryProvider);
+      final profile = await authRepository.getUserProfile(widget.otherUserId);
+      if (profile != null && mounted) {
+        setState(() => _otherUser = profile);
+      }
+    } catch (e) {
+      debugPrint('Failed to load user profile: $e');
     }
   }
 
@@ -126,7 +138,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _otherUser?.fullName ?? 'Loading...',
+                    _otherUser?.fullName ?? 'Chat',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   if (_otherUser?.username != null)
