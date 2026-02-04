@@ -139,21 +139,25 @@ class _MainAppState extends ConsumerState<MainApp> {
     final router = ref.watch(goRouterProvider);
     final theme = ref.watch(themeDataProvider);
 
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: MediaQuery.textScalerOf(context).clamp(
-          minScaleFactor: 0.85,
-          maxScaleFactor: 1.3,
+    return GestureDetector(
+      // Dismiss keyboard when tapping anywhere outside text fields
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: MediaQuery.textScalerOf(context).clamp(
+            minScaleFactor: 0.85,
+            maxScaleFactor: 1.3,
+          ),
         ),
-      ),
-      child: MaterialApp.router(
-        title: 'Highwoods',
-        scaffoldMessengerKey: _scaffoldMessengerKey,
-        theme: theme,
-        themeAnimationDuration: const Duration(milliseconds: 300),
-        themeAnimationCurve: Curves.easeInOut,
-        routerConfig: router,
-        debugShowCheckedModeBanner: false,
+        child: MaterialApp.router(
+          title: 'Highwoods',
+          scaffoldMessengerKey: _scaffoldMessengerKey,
+          theme: theme,
+          themeAnimationDuration: const Duration(milliseconds: 300),
+          themeAnimationCurve: Curves.easeInOut,
+          routerConfig: router,
+          debugShowCheckedModeBanner: false,
+        ),
       ),
     );
   }
