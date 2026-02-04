@@ -16,6 +16,7 @@ class InviteScreen extends ConsumerStatefulWidget {
 
 class _InviteScreenState extends ConsumerState<InviteScreen> {
   final _messageController = TextEditingController();
+  final _shareButtonKey = GlobalKey();
   bool _isLoading = false;
 
   @override
@@ -110,6 +111,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
 
             // Share Button
             FilledButton.icon(
+              key: _shareButtonKey,
               onPressed: _isLoading ? null : _shareInvitation,
               icon: _isLoading
                   ? SizedBox(
@@ -278,15 +280,18 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
-                              TextButton.icon(
+                              Builder(
+                              builder: (buttonContext) => TextButton.icon(
                                 icon: const Icon(Icons.share, size: 18),
                                 label: const Text('Share'),
                                 onPressed: () => _reshareInvitation(
                                   invitation.inviteLink,
                                   invitation.message,
                                   invitation.code,
+                                  buttonContext,
                                 ),
                               ),
+                            ),
                               SizedBox(width: tokens.spacingSm),
                               TextButton.icon(
                                 icon: Icon(Icons.close, size: 18, color: colorScheme.error),
@@ -385,9 +390,13 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       );
 
       // Open native share sheet
+      final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
       await Share.share(
         shareText,
         subject: 'Join the Highwoods Community',
+        sharePositionOrigin: box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, 100),
       );
 
       if (mounted) {
@@ -409,12 +418,21 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     }
   }
 
-  Future<void> _reshareInvitation(String inviteLink, String? personalMessage, String? code) async {
+  Future<void> _reshareInvitation(
+    String inviteLink,
+    String? personalMessage,
+    String? code,
+    BuildContext buttonContext,
+  ) async {
     final shareText = _buildShareMessage(inviteLink, personalMessage, code);
+    final box = buttonContext.findRenderObject() as RenderBox?;
 
     await Share.share(
       shareText,
       subject: 'Join the Highwoods Community',
+      sharePositionOrigin: box != null
+          ? box.localToGlobal(Offset.zero) & box.size
+          : Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, 100),
     );
   }
 
