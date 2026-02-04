@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/feed/post_comment.dart';
 import '../../theme/app_theme.dart';
+import '../common/app_cached_avatar.dart';
 
 /// Single comment item widget
 class CommentItem extends StatelessWidget {
@@ -35,21 +36,10 @@ class CommentItem extends StatelessWidget {
           // Avatar
           GestureDetector(
             onTap: onAuthorTap,
-            child: CircleAvatar(
+            child: AppCachedAvatar(
+              imageUrl: comment.authorAvatarUrl,
               radius: comment.isReply ? 14 : 18,
-              backgroundColor: theme.colorScheme.primaryContainer,
-              backgroundImage: comment.authorAvatarUrl != null
-                  ? NetworkImage(comment.authorAvatarUrl!)
-                  : null,
-              child: comment.authorAvatarUrl == null
-                  ? Text(
-                      _getInitials(comment.authorUsername),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onPrimaryContainer,
-                        fontSize: comment.isReply ? 10 : 12,
-                      ),
-                    )
-                  : null,
+              fallbackInitials: comment.authorUsername,
             ),
           ),
           SizedBox(width: tokens.spacingMd),
@@ -141,15 +131,6 @@ class CommentItem extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return '?';
-    final parts = name.split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name[0].toUpperCase();
   }
 
   String _timeAgo(DateTime dateTime) {

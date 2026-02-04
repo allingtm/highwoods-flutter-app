@@ -43,6 +43,7 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
     String? lastName,
     String? avatarUrl,
     String? bio,
+    bool? allowOpenMessaging,
   }) async {
     if (_userId == null) return;
 
@@ -54,11 +55,16 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
         lastName: lastName,
         avatarUrl: avatarUrl,
         bio: bio,
+        allowOpenMessaging: allowOpenMessaging,
       );
       await _loadProfile();
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
     }
+  }
+
+  Future<void> updateMessagingPrivacy(bool allowOpenMessaging) async {
+    await updateProfile(allowOpenMessaging: allowOpenMessaging);
   }
 
   Future<void> refresh() async {

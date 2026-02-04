@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import '../../models/feed/feed_models.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/image_url_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/common/app_cached_avatar.dart';
+import '../../widgets/common/app_cached_image.dart';
 import '../../widgets/feed/feed_widgets.dart';
 
 /// Full post detail screen with comments
@@ -412,20 +415,10 @@ class _PostContent extends StatelessWidget {
           children: [
             GestureDetector(
               onTap: onAuthorTap,
-              child: CircleAvatar(
+              child: AppCachedAvatar(
+                imageUrl: post.authorAvatarUrl,
                 radius: 24,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                backgroundImage: post.authorAvatarUrl != null
-                    ? NetworkImage(post.authorAvatarUrl!)
-                    : null,
-                child: post.authorAvatarUrl == null
-                    ? Text(
-                        _getInitials(post.authorUsername),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      )
-                    : null,
+                fallbackInitials: post.authorUsername,
               ),
             ),
             SizedBox(width: tokens.spacingMd),
@@ -487,20 +480,10 @@ class _PostContent extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.radiusLg),
             child: AspectRatio(
               aspectRatio: 16 / 9,
-              child: Image.network(
-                post.primaryImageUrl!,
+              child: AppCachedImage(
+                imageUrl: post.primaryImageUrl!,
+                size: ImageSize.full,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: Center(
-                      child: Icon(
-                        Icons.image_not_supported_outlined,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  );
-                },
               ),
             ),
           ),
@@ -542,15 +525,6 @@ class _PostContent extends StatelessWidget {
         ],
       ],
     );
-  }
-
-  String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return '?';
-    final parts = name.split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name[0].toUpperCase();
   }
 }
 

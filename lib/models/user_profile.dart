@@ -7,6 +7,7 @@ class UserProfile {
   final String? avatarUrl;
   final String? bio;
   final String role;
+  final bool allowOpenMessaging;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -19,6 +20,7 @@ class UserProfile {
     this.avatarUrl,
     this.bio,
     this.role = 'user',
+    this.allowOpenMessaging = true,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -33,6 +35,7 @@ class UserProfile {
       avatarUrl: json['avatar_url'] as String?,
       bio: json['bio'] as String?,
       role: json['role'] as String? ?? 'user',
+      allowOpenMessaging: json['allow_open_messaging'] as bool? ?? true,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -48,6 +51,7 @@ class UserProfile {
       'avatar_url': avatarUrl,
       'bio': bio,
       'role': role,
+      'allow_open_messaging': allowOpenMessaging,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -62,6 +66,7 @@ class UserProfile {
     String? avatarUrl,
     String? bio,
     String? role,
+    bool? allowOpenMessaging,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -74,6 +79,7 @@ class UserProfile {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       bio: bio ?? this.bio,
       role: role ?? this.role,
+      allowOpenMessaging: allowOpenMessaging ?? this.allowOpenMessaging,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

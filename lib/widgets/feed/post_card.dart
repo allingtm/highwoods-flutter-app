@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/post_category.dart';
 import '../../models/feed/feed_models.dart';
+import '../../services/image_url_service.dart';
 import '../../theme/app_theme.dart';
+import '../common/app_cached_avatar.dart';
+import '../common/app_cached_image.dart';
 import 'post_actions_row.dart';
 
 /// Base post card widget that renders appropriate variant based on post category
@@ -43,20 +46,10 @@ class PostCard extends StatelessWidget {
             if (post.primaryImageUrl != null)
               AspectRatio(
                 aspectRatio: 16 / 9,
-                child: Image.network(
-                  post.primaryImageUrl!,
+                child: AppCachedImage(
+                  imageUrl: post.primaryImageUrl!,
+                  size: ImageSize.thumbnail,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: Center(
-                        child: Icon(
-                          Icons.image_not_supported_outlined,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    );
-                  },
                 ),
               ),
 
@@ -172,20 +165,10 @@ class _PostHeader extends StatelessWidget {
         // Author avatar
         GestureDetector(
           onTap: onAuthorTap,
-          child: CircleAvatar(
+          child: AppCachedAvatar(
+            imageUrl: post.authorAvatarUrl,
             radius: 18,
-            backgroundColor: theme.colorScheme.primaryContainer,
-            backgroundImage: post.authorAvatarUrl != null
-                ? NetworkImage(post.authorAvatarUrl!)
-                : null,
-            child: post.authorAvatarUrl == null
-                ? Text(
-                    _getInitials(post.authorUsername),
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  )
-                : null,
+            fallbackInitials: post.authorUsername,
           ),
         ),
         SizedBox(width: tokens.spacingMd),
@@ -265,14 +248,6 @@ class _PostHeader extends StatelessWidget {
     );
   }
 
-  String _getInitials(String? name) {
-    if (name == null || name.isEmpty) return '?';
-    final parts = name.split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return name[0].toUpperCase();
-  }
 }
 
 /// Marketplace-specific content (price, condition)

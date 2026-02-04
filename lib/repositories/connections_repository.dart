@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/connection.dart';
 import '../models/invitation.dart';
 import '../models/message.dart';
+import '../models/message_report.dart';
 import '../models/user_profile.dart';
 
 /// Repository for connections, invitations, and messaging operations
@@ -614,7 +615,7 @@ class ConnectionsRepository {
       return Message.fromJson(response);
     } on PostgrestException catch (e) {
       if (e.code == '42501') {
-        throw Exception('You can only message users you are connected with');
+        throw Exception('This user only accepts messages from their contacts');
       }
       throw Exception('Failed to send message: ${e.message}');
     } catch (e) {
@@ -744,5 +745,86 @@ class ConnectionsRepository {
   /// Unsubscribes from a channel
   Future<void> unsubscribe(RealtimeChannel channel) async {
     await _supabase.removeChannel(channel);
+  }
+
+  // ============================================================
+  // Blocking & Reporting
+  // ============================================================
+
+  /// Blocks a user by their user ID.
+  /// If a connection exists, updates it to blocked status.
+  /// If no connection exists, creates a new blocked connection.
+  Future<void> blockUserById(String otherUserId) async {
+    try {
+      final userId = _currentUserId;
+      if (userId == null) {
+        throw Exception('User must be authenticated');
+      }
+
+      if (userId == otherUserId) {
+        throw Exception('Cannot block yourself');
+      }
+
+      // Check if a connection already exists
+      final existing = await getConnectionWith(otherUserId);
+
+      if (existing != null) {
+        // Update existing connection to blocked
+        await _supabase
+            .from('connections')
+            .update({'status': 'blocked', 'updated_at': DateTime.now().toIso8601String()})
+            .eq('id', existing.id);
+      } else {
+        // Create a new blocked connection
+        await _supabase.from('connections').insert({
+          'requester_id': userId,
+          'recipient_id': otherUserId,
+          'status': 'blocked',
+        });
+      }
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to block user: ${e.message}');
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Failed to block user: $e');
+    }
+  }
+
+  /// Reports a message for spam, harassment, or other violations.
+  /// Can only report messages you have received.
+  Future<MessageReport> reportMessage({
+    required String messageId,
+    required MessageReportReason reason,
+    String? description,
+  }) async {
+    try {
+      final userId = _currentUserId;
+      if (userId == null) {
+        throw Exception('User must be authenticated');
+      }
+
+      final response = await _supabase
+          .from('message_reports')
+          .insert({
+            'message_id': messageId,
+            'reporter_id': userId,
+            'reason': reason.name,
+            if (description != null && description.isNotEmpty)
+              'description': description,
+          })
+          .select()
+          .single();
+
+      return MessageReport.fromJson(response);
+    } on PostgrestException catch (e) {
+      if (e.code == '23505') {
+        // Unique constraint violation - already reported
+        throw Exception('You have already reported this message');
+      }
+      throw Exception('Failed to report message: ${e.message}');
+    } catch (e) {
+      if (e is Exception) rethrow;
+      throw Exception('Failed to report message: $e');
+    }
   }
 }

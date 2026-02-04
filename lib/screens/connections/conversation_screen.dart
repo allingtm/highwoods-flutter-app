@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../models/message.dart';
+import '../../models/message_report.dart';
 import '../../models/user_profile.dart';
 import '../../providers/connections_provider.dart';
 import '../../theme/app_theme.dart';
@@ -434,6 +435,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.flag_outlined),
+                title: const Text('Report'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showReportDialog(context);
+                },
+              ),
+              ListTile(
                 leading: Icon(
                   Icons.block,
                   color: Theme.of(context).colorScheme.error,
@@ -444,7 +453,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 ),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Block user
+                  _showBlockConfirmation(context);
                 },
               ),
             ],
@@ -452,6 +461,172 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         );
       },
     );
+  }
+
+  void _showReportDialog(BuildContext context) {
+    MessageReportReason? selectedReason;
+    final descriptionController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Report Conversation'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Why are you reporting this conversation?'),
+                    const SizedBox(height: 16),
+                    ...MessageReportReason.values.map((reason) {
+                      return RadioListTile<MessageReportReason>(
+                        title: Text(reason.displayName),
+                        value: reason,
+                        groupValue: selectedReason,
+                        onChanged: (value) {
+                          setDialogState(() => selectedReason = value);
+                        },
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      );
+                    }),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Additional details (optional)',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                      maxLength: 500,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: selectedReason == null
+                      ? null
+                      : () async {
+                          Navigator.pop(context);
+                          await _submitReport(
+                            selectedReason!,
+                            descriptionController.text,
+                          );
+                        },
+                  child: const Text('Submit Report'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitReport(
+    MessageReportReason reason,
+    String description,
+  ) async {
+    // Get the most recent message from the other user to report
+    final messages = ref.read(messagesProvider(widget.otherUserId)).valueOrNull;
+    final messageToReport = messages?.firstWhere(
+      (m) => m.senderId == widget.otherUserId,
+      orElse: () => messages!.first,
+    );
+
+    if (messageToReport == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No messages to report')),
+        );
+      }
+      return;
+    }
+
+    try {
+      final repository = ref.read(connectionsRepositoryProvider);
+      await repository.reportMessage(
+        messageId: messageToReport.id,
+        reason: reason,
+        description: description.isNotEmpty ? description : null,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Report submitted. Thank you for helping keep our community safe.'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit report: $e')),
+        );
+      }
+    }
+  }
+
+  void _showBlockConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Block User'),
+          content: Text(
+            'Are you sure you want to block ${_otherUser?.fullName ?? 'this user'}? '
+            'You will no longer be able to send or receive messages from them.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                await _blockUser();
+              },
+              child: const Text('Block'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _blockUser() async {
+    try {
+      final repository = ref.read(connectionsRepositoryProvider);
+      await repository.blockUserById(widget.otherUserId);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${_otherUser?.fullName ?? 'User'} has been blocked'),
+          ),
+        );
+        // Navigate back to messages list
+        context.pop();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to block user: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _sendMessage() async {

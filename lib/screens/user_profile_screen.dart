@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../models/connection.dart';
 import '../models/user_profile.dart';
 import '../models/feed/feed_models.dart';
 import '../providers/auth_provider.dart';
+import '../providers/connections_provider.dart';
 import '../providers/feed_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
@@ -15,6 +17,13 @@ final otherUserProfileProvider =
     FutureProvider.family<UserProfile?, String>((ref, userId) async {
   final authRepository = ref.watch(authRepositoryProvider);
   return await authRepository.getUserProfile(userId);
+});
+
+/// Provider to check connection status with a specific user
+final connectionWithUserProvider =
+    FutureProvider.family<Connection?, String>((ref, userId) async {
+  final repository = ref.watch(connectionsRepositoryProvider);
+  return await repository.getConnectionWith(userId);
 });
 
 class UserProfileScreen extends ConsumerStatefulWidget {
@@ -50,6 +59,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     final profileAsync = ref.watch(otherUserProfileProvider(widget.userId));
     final currentUser = ref.watch(currentUserProvider);
     final isOwnProfile = currentUser?.id == widget.userId;
+    final connectionAsync = ref.watch(connectionWithUserProvider(widget.userId));
 
     return Scaffold(
       body: profileAsync.when(
@@ -90,6 +100,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                             isOwnProfile: isOwnProfile,
                             isLoggedIn: currentUser != null,
                             hideMessageButton: widget.hideMessageButton,
+                            isConnected: connectionAsync.valueOrNull?.status == ConnectionStatus.accepted,
                             onMessageTap: () {
                               context.push('/connections/conversation/${widget.userId}');
                             },
@@ -182,6 +193,7 @@ class _ProfileHeader extends StatelessWidget {
     required this.isOwnProfile,
     required this.isLoggedIn,
     this.hideMessageButton = false,
+    this.isConnected = false,
     this.onMessageTap,
   });
 
@@ -189,7 +201,12 @@ class _ProfileHeader extends StatelessWidget {
   final bool isOwnProfile;
   final bool isLoggedIn;
   final bool hideMessageButton;
+  final bool isConnected;
   final VoidCallback? onMessageTap;
+
+  /// Whether the current user can message this profile.
+  /// True if: profile allows open messaging OR they are connected.
+  bool get _canMessage => profile.allowOpenMessaging || isConnected;
 
   @override
   Widget build(BuildContext context) {
@@ -252,8 +269,8 @@ class _ProfileHeader extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          // Message button
-          if (isLoggedIn && !isOwnProfile && !hideMessageButton) ...[
+          // Message button - only show if user allows open messaging or we're connected
+          if (isLoggedIn && !isOwnProfile && !hideMessageButton && _canMessage) ...[
             SizedBox(height: tokens.spacingMd),
             FilledButton.icon(
               onPressed: onMessageTap,

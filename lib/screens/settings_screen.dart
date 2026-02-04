@@ -7,6 +7,7 @@ import '../providers/auth_provider.dart';
 import '../providers/notification_provider.dart';
 import '../providers/purchase_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/user_profile_provider.dart';
 import '../services/notification_service.dart';
 import '../utils/error_utils.dart';
 import '../theme/app_theme.dart';
@@ -46,6 +47,13 @@ class SettingsScreen extends ConsumerWidget {
           _buildSectionHeader(context, 'Notifications'),
           SizedBox(height: tokens.spacingSm),
           _buildNotificationSettings(context, ref, notificationPrefs, tokens),
+
+          SizedBox(height: tokens.spacingXl),
+
+          // Privacy Section
+          _buildSectionHeader(context, 'Privacy'),
+          SizedBox(height: tokens.spacingSm),
+          _buildPrivacySettings(context, ref, tokens),
 
           SizedBox(height: tokens.spacingXl),
 
@@ -260,6 +268,73 @@ class SettingsScreen extends ConsumerWidget {
       ),
       value: value,
       onChanged: onChanged,
+    );
+  }
+
+  Widget _buildPrivacySettings(
+    BuildContext context,
+    WidgetRef ref,
+    AppThemeTokens tokens,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final userProfile = ref.watch(userProfileNotifierProvider);
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+      ),
+      child: userProfile.when(
+        data: (profile) {
+          final allowOpenMessaging = profile?.allowOpenMessaging ?? true;
+          return SwitchListTile(
+            secondary: Icon(
+              Icons.message_outlined,
+              color: colorScheme.primary,
+            ),
+            title: const Text(
+              'Open Messaging',
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text(
+              allowOpenMessaging
+                  ? 'Anyone can message you'
+                  : 'Only contacts can message you (except for post inquiries)',
+              style: TextStyle(
+                color: context.colors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+            value: allowOpenMessaging,
+            onChanged: (value) async {
+              try {
+                await ref
+                    .read(userProfileNotifierProvider.notifier)
+                    .updateMessagingPrivacy(value);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to update setting: $e')),
+                  );
+                }
+              }
+            },
+          );
+        },
+        loading: () => const ListTile(
+          leading: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          title: Text('Loading...'),
+        ),
+        error: (_, __) => ListTile(
+          leading: Icon(Icons.error_outline, color: colorScheme.error),
+          title: const Text('Failed to load settings'),
+        ),
+      ),
     );
   }
 
