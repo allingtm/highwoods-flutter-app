@@ -34,13 +34,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // CRITICAL: Check for pending notification route (cold start fallback)
       // This handles the case where a notification is tapped before the router
-      // was registered, or the microtask navigation failed to win the race
+      // was registered, or the microtask navigation failed to win the race.
+      // We PEEK (not consume) here so that registerRouter can still do the
+      // full two-step navigation (go to parent, then push target).
       final pendingRoute =
-          NotificationNavigationService.instance.consumePendingRoute();
+          NotificationNavigationService.instance.peekPendingRoute();
       if (pendingRoute != null) {
         debugPrint(
-            'Router redirect: Consuming pending notification route: $pendingRoute');
-        return pendingRoute;
+            'Router redirect: Found pending notification route, redirecting to parent: ${pendingRoute.parentRoute}');
+        // Return parent route - registerRouter will handle pushing target
+        return pendingRoute.parentRoute;
       }
 
       final isGoingToAuth = location == '/login' ||
@@ -139,7 +142,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'post-detail',
         builder: (context, state) {
           final postId = state.pathParameters['postId']!;
-          return PostDetailScreen(postId: postId);
+          final fromNotification =
+              state.uri.queryParameters['fromNotification'] == 'true';
+          return PostDetailScreen(
+            postId: postId,
+            fromNotification: fromNotification,
+          );
         },
       ),
       GoRoute(
@@ -222,7 +230,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'conversation',
         builder: (context, state) {
           final userId = state.pathParameters['userId']!;
-          return ConversationScreen(otherUserId: userId);
+          final fromNotification =
+              state.uri.queryParameters['fromNotification'] == 'true';
+          return ConversationScreen(
+            otherUserId: userId,
+            fromNotification: fromNotification,
+          );
         },
       ),
       // Directory routes

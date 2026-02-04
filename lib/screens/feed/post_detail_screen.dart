@@ -15,9 +15,11 @@ class PostDetailScreen extends ConsumerStatefulWidget {
   const PostDetailScreen({
     super.key,
     required this.postId,
+    this.fromNotification = false,
   });
 
   final String postId;
+  final bool fromNotification;
 
   @override
   ConsumerState<PostDetailScreen> createState() => _PostDetailScreenState();
@@ -28,6 +30,24 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   final FocusNode _commentFocusNode = FocusNode();
   bool _isSubmitting = false;
   PostComment? _replyingToComment;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // If opened from notification, force refresh to show latest content
+    if (widget.fromNotification) {
+      debugPrint('PostDetailScreen: Opened from notification, forcing refresh');
+      // Use post-frame callback to ensure provider is available
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Clear cached post to force fresh load from DB
+        ref.read(postCacheProvider.notifier).removePost(widget.postId);
+        // Invalidate providers to trigger fresh fetch
+        ref.invalidate(postDetailProvider(widget.postId));
+        ref.invalidate(postCommentsProvider(widget.postId));
+      });
+    }
+  }
 
   @override
   void dispose() {

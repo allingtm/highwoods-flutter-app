@@ -13,10 +13,12 @@ import '../../theme/app_theme_tokens.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
   final String otherUserId;
+  final bool fromNotification;
 
   const ConversationScreen({
     super.key,
     required this.otherUserId,
+    this.fromNotification = false,
   });
 
   @override
@@ -33,6 +35,17 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   @override
   void initState() {
     super.initState();
+
+    // If opened from notification, force refresh to show latest messages
+    if (widget.fromNotification) {
+      debugPrint('ConversationScreen: Opened from notification, forcing refresh');
+      // Use post-frame callback to ensure provider is available
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.invalidate(messagesProvider(widget.otherUserId));
+        ref.invalidate(conversationsProvider);
+      });
+    }
+
     _loadOtherUser();
     _markAsRead();
     _subscribeToMessages();

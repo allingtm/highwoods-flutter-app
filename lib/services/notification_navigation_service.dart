@@ -14,6 +14,17 @@ class ForegroundNotification {
   });
 }
 
+/// Data class for notification navigation with parent route for back navigation
+class NotificationRoute {
+  final String parentRoute;
+  final String targetRoute;
+
+  const NotificationRoute({
+    required this.parentRoute,
+    required this.targetRoute,
+  });
+}
+
 /// Service for handling notification-triggered navigation
 ///
 /// Handles three scenarios:
@@ -34,7 +45,7 @@ class NotificationNavigationService extends ChangeNotifier {
   GoRouter Function()? _getRouter;
 
   /// Pending route from notification click (cold start scenario)
-  String? _pendingRoute;
+  NotificationRoute? _pendingRoute;
 
   /// Whether the pending navigation has been consumed
   bool _navigationConsumed = false;
@@ -47,6 +58,13 @@ class NotificationNavigationService extends ChangeNotifier {
 
   /// Check if there's a pending route
   bool get hasPendingRoute => _pendingRoute != null;
+
+  /// Peek at the pending route without consuming it
+  /// Used by router redirect to return parent route without preventing
+  /// registerRouter from doing the full two-step navigation
+  NotificationRoute? peekPendingRoute() {
+    return _pendingRoute;
+  }
 
   /// Check if navigation should be skipped by other handlers (e.g., deep link handler)
   /// Returns true if:
@@ -74,10 +92,34 @@ class NotificationNavigationService extends ChangeNotifier {
     // Check for pending route from cold start
     final pending = consumePendingRoute();
     if (pending != null) {
-      debugPrint('NotificationNavigationService: Cold start navigation to $pending');
-      _getRouter!().go(pending);
+      debugPrint('NotificationNavigationService: Cold start navigation');
+      debugPrint('  Parent: ${pending.parentRoute}');
+      debugPrint('  Target: ${pending.targetRoute}');
+      _navigateWithParent(pending);
       _navigationCompletedAt = DateTime.now();
     }
+  }
+
+  /// Navigate with two-step navigation: go to parent first, then push target
+  /// This ensures proper back navigation from notification-opened screens
+  void _navigateWithParent(NotificationRoute route) {
+    final router = _getRouter!();
+
+    // If parent and target are the same, just navigate once (tab-based routes)
+    if (route.parentRoute == route.targetRoute) {
+      debugPrint('NotificationNavigationService: Same parent/target, single navigation');
+      router.go(route.parentRoute);
+      return;
+    }
+
+    // Two-step navigation: go to parent first, then push target
+    debugPrint('NotificationNavigationService: Two-step navigation');
+    router.go(route.parentRoute);
+    // Then push target (adds to stack, enabling back navigation)
+    // Use Future.microtask to ensure parent navigation completes first
+    Future.microtask(() {
+      router.push(route.targetRoute);
+    });
   }
 
   /// Handle notification click - maps deep link to app route and navigates
@@ -97,40 +139,42 @@ class NotificationNavigationService extends ChangeNotifier {
     final targetId = additionalData['target_id'] as String?;
     final deepLinkPath = additionalData['deep_link_path'] as String?;
 
-    // Map to app route
-    final mappedPath = _mapDeepLinkToRoute(
+    // Map to app route with parent for back navigation
+    final notificationRoute = _mapDeepLinkToRoute(
       type: type,
       targetId: targetId,
       deepLinkPath: deepLinkPath,
     );
 
-    if (mappedPath == null) {
+    if (notificationRoute == null) {
       debugPrint('NotificationNavigationService: Could not map notification to route');
       return;
     }
 
-    debugPrint('NotificationNavigationService: Mapped path: $mappedPath');
+    debugPrint('NotificationNavigationService: Mapped route');
+    debugPrint('  Parent: ${notificationRoute.parentRoute}');
+    debugPrint('  Target: ${notificationRoute.targetRoute}');
 
     // Store pending route
-    _pendingRoute = mappedPath;
+    _pendingRoute = notificationRoute;
     _navigationConsumed = false;
 
     // For warm start (app already running), navigate immediately
     // For cold start, the router redirect will pick up the pending route
     if (_getRouter != null) {
       _navigationConsumed = true;
-      debugPrint('NotificationNavigationService: Immediate navigation to $mappedPath');
-      _getRouter!().go(mappedPath);
+      debugPrint('NotificationNavigationService: Immediate navigation');
+      _navigateWithParent(notificationRoute);
       _pendingRoute = null;
       _navigationCompletedAt = DateTime.now();
     } else {
-      debugPrint('NotificationNavigationService: Router not ready, storing pending route: $mappedPath');
+      debugPrint('NotificationNavigationService: Router not ready, storing pending route');
     }
   }
 
   /// Consume and return the pending route
   /// Returns null if no pending route or already consumed
-  String? consumePendingRoute() {
+  NotificationRoute? consumePendingRoute() {
     if (_pendingRoute == null || _navigationConsumed) {
       return null;
     }
@@ -169,12 +213,16 @@ class NotificationNavigationService extends ChangeNotifier {
   /// Check if there's a pending foreground notification
   bool get hasForegroundNotification => _pendingForegroundNotification != null;
 
-  /// Map notification data to an app route
+  /// Map notification data to an app route with parent for back navigation
   ///
   /// Supports both:
   /// - Type-based mapping (type + target_id)
   /// - Direct deep link path (deep_link_path)
-  String? _mapDeepLinkToRoute({
+  ///
+  /// Returns a NotificationRoute with:
+  /// - parentRoute: The parent screen to navigate to first (for back button)
+  /// - targetRoute: The actual target screen with fromNotification=true param
+  NotificationRoute? _mapDeepLinkToRoute({
     String? type,
     String? targetId,
     String? deepLinkPath,
@@ -197,63 +245,122 @@ class NotificationNavigationService extends ChangeNotifier {
       case 'comment':
       case 'safety_alert':
         if (targetId != null) {
-          return '/post/$targetId';
+          return NotificationRoute(
+            parentRoute: '/home?tab=0', // Feed tab
+            targetRoute: '/post/$targetId?fromNotification=true',
+          );
         }
-        return '/home'; // Fallback to feed
+        // Fallback to feed (no push needed)
+        return NotificationRoute(
+          parentRoute: '/home?tab=0',
+          targetRoute: '/home?tab=0',
+        );
 
       case 'message':
         if (targetId != null) {
-          return '/connections/conversation/$targetId';
+          return NotificationRoute(
+            parentRoute: '/home?tab=2', // Messages tab
+            targetRoute: '/connections/conversation/$targetId?fromNotification=true',
+          );
         }
-        return '/home?tab=2'; // Fallback to messages tab
+        // Fallback to messages tab (no push needed)
+        return NotificationRoute(
+          parentRoute: '/home?tab=2',
+          targetRoute: '/home?tab=2',
+        );
 
       case 'connection':
-        return '/home?tab=3'; // Network tab
+        // Network tab - no separate screen to push
+        return NotificationRoute(
+          parentRoute: '/home?tab=3',
+          targetRoute: '/home?tab=3',
+        );
 
       default:
         debugPrint('NotificationNavigationService: Unknown notification type: $type');
-        return '/home';
+        return NotificationRoute(
+          parentRoute: '/home',
+          targetRoute: '/home',
+        );
     }
   }
 
-  /// Map a deep link path to an app route
+  /// Map a deep link path to an app route with parent for back navigation
   ///
   /// Handles path normalization and tab-based routing for paths that
   /// should preserve the app shell (bottom navigation).
-  String _mapPathToRoute(String path) {
+  NotificationRoute _mapPathToRoute(String path) {
     // Remove leading slash if present for consistent matching
     final normalizedPath = path.startsWith('/') ? path : '/$path';
 
-    // Posts - direct navigation
+    // Posts - direct navigation with Feed as parent
     if (normalizedPath.startsWith('/post/')) {
-      return normalizedPath;
+      // Add fromNotification param if not already present
+      final targetPath = normalizedPath.contains('?')
+          ? '$normalizedPath&fromNotification=true'
+          : '$normalizedPath?fromNotification=true';
+      return NotificationRoute(
+        parentRoute: '/home?tab=0', // Feed tab
+        targetRoute: targetPath,
+      );
     }
 
-    // Conversations - direct navigation
+    // Conversations - direct navigation with Messages as parent
     if (normalizedPath.startsWith('/connections/conversation/')) {
-      return normalizedPath;
+      // Add fromNotification param if not already present
+      final targetPath = normalizedPath.contains('?')
+          ? '$normalizedPath&fromNotification=true'
+          : '$normalizedPath?fromNotification=true';
+      return NotificationRoute(
+        parentRoute: '/home?tab=2', // Messages tab
+        targetRoute: targetPath,
+      );
     }
 
-    // Tab-based routes (preserve app shell)
+    // Tab-based routes (preserve app shell) - no separate push needed
     if (normalizedPath == '/feed' || normalizedPath.startsWith('/feed/')) {
-      return '/home?tab=0';
+      return NotificationRoute(
+        parentRoute: '/home?tab=0',
+        targetRoute: '/home?tab=0',
+      );
     }
     if (normalizedPath == '/directory' || normalizedPath.startsWith('/directory/')) {
-      return '/home?tab=1';
+      return NotificationRoute(
+        parentRoute: '/home?tab=1',
+        targetRoute: '/home?tab=1',
+      );
     }
     if (normalizedPath == '/messages') {
-      return '/home?tab=2';
+      return NotificationRoute(
+        parentRoute: '/home?tab=2',
+        targetRoute: '/home?tab=2',
+      );
     }
     if (normalizedPath == '/connections') {
-      return '/home?tab=3';
+      return NotificationRoute(
+        parentRoute: '/home?tab=3',
+        targetRoute: '/home?tab=3',
+      );
     }
 
-    // Profile and settings
-    if (normalizedPath.startsWith('/profile') || normalizedPath.startsWith('/settings')) {
-      return normalizedPath;
+    // Profile and settings - use home as parent
+    if (normalizedPath.startsWith('/profile')) {
+      return NotificationRoute(
+        parentRoute: '/home',
+        targetRoute: normalizedPath,
+      );
+    }
+    if (normalizedPath.startsWith('/settings')) {
+      return NotificationRoute(
+        parentRoute: '/home',
+        targetRoute: normalizedPath,
+      );
     }
 
-    // Default: return the path as-is, GoRouter will handle unknown routes
-    return normalizedPath;
+    // Default: use home as parent
+    return NotificationRoute(
+      parentRoute: '/home',
+      targetRoute: normalizedPath,
+    );
   }
 }
