@@ -97,26 +97,22 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                           opacity: opacity,
                           child: _ProfileHeader(
                             profile: profile,
-                            isOwnProfile: isOwnProfile,
-                            isLoggedIn: currentUser != null,
-                            hideMessageButton: widget.hideMessageButton,
-                            isConnected: connectionAsync.valueOrNull?.status == ConnectionStatus.accepted,
-                            onMessageTap: () {
-                              context.push('/connections/conversation/${widget.userId}');
-                            },
                           ),
                         ),
                       ),
                     );
                   },
                 ),
-                bottom: TabBar(
-                  controller: _tabController,
-                  tabs: const [
-                    Tab(icon: Icon(Icons.grid_on_rounded), text: 'Posts'),
-                    Tab(icon: Icon(Icons.chat_bubble_outline_rounded), text: 'Comments'),
-                    Tab(icon: Icon(Icons.favorite_border_rounded), text: 'Likes'),
-                  ],
+                bottom: _ProfileTabBar(
+                  tabController: _tabController,
+                  showMessageButton: currentUser != null &&
+                      !isOwnProfile &&
+                      !widget.hideMessageButton &&
+                      (profile.allowOpenMessaging ||
+                          connectionAsync.valueOrNull?.status == ConnectionStatus.accepted),
+                  onMessageTap: () {
+                    context.push('/connections/conversation/${widget.userId}');
+                  },
                 ),
               ),
             ],
@@ -186,27 +182,58 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 }
 
-/// Profile header with avatar, name, bio, and message button
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({
-    required this.profile,
-    required this.isOwnProfile,
-    required this.isLoggedIn,
-    this.hideMessageButton = false,
-    this.isConnected = false,
+/// Custom tab bar with optional message button
+class _ProfileTabBar extends StatelessWidget implements PreferredSizeWidget {
+  const _ProfileTabBar({
+    required this.tabController,
+    required this.showMessageButton,
     this.onMessageTap,
   });
 
-  final UserProfile profile;
-  final bool isOwnProfile;
-  final bool isLoggedIn;
-  final bool hideMessageButton;
-  final bool isConnected;
+  final TabController tabController;
+  final bool showMessageButton;
   final VoidCallback? onMessageTap;
 
-  /// Whether the current user can message this profile.
-  /// True if: profile allows open messaging OR they are connected.
-  bool get _canMessage => profile.allowOpenMessaging || isConnected;
+  @override
+  Size get preferredSize => const Size.fromHeight(48);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (showMessageButton)
+          Padding(
+            padding: const EdgeInsets.only(left: 12.0),
+            child: IconButton.filled(
+              onPressed: onMessageTap,
+              icon: const Icon(Icons.message_outlined, size: 20),
+              style: IconButton.styleFrom(
+                minimumSize: const Size(40, 40),
+              ),
+            ),
+          ),
+        Expanded(
+          child: TabBar(
+            controller: tabController,
+            tabs: const [
+              Tab(icon: Icon(Icons.grid_on_rounded), text: 'Posts'),
+              Tab(icon: Icon(Icons.chat_bubble_outline_rounded), text: 'Comments'),
+              Tab(icon: Icon(Icons.favorite_border_rounded), text: 'Likes'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Profile header with avatar, name, and bio
+class _ProfileHeader extends StatelessWidget {
+  const _ProfileHeader({
+    required this.profile,
+  });
+
+  final UserProfile profile;
 
   @override
   Widget build(BuildContext context) {
@@ -267,15 +294,6 @@ class _ProfileHeader extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-            ),
-          ],
-          // Message button - only show if user allows open messaging or we're connected
-          if (isLoggedIn && !isOwnProfile && !hideMessageButton && _canMessage) ...[
-            SizedBox(height: tokens.spacingMd),
-            FilledButton.icon(
-              onPressed: onMessageTap,
-              icon: const Icon(Icons.message_outlined, size: 18),
-              label: const Text('Message'),
             ),
           ],
         ],

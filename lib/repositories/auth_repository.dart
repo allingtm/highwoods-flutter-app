@@ -10,6 +10,7 @@ class AuthRepository {
 
   Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
 
+  /// Sends a magic link for registration (allows creating new users).
   Future<void> sendOTP({
     required String email,
     String? username,
@@ -31,6 +32,21 @@ class AuthRepository {
       await _supabase.auth.signInWithOtp(
         email: email,
         emailRedirectTo: redirectUrl,
+      );
+    } on AuthException catch (e) {
+      throw Exception('Failed to send OTP: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to send OTP: $e');
+    }
+  }
+
+  /// Sends a magic link for login only (does not create new users).
+  Future<void> sendLoginOTP({required String email}) async {
+    try {
+      await _supabase.auth.signInWithOtp(
+        email: email,
+        emailRedirectTo: 'https://app.highwoods.co.uk/auth/magic-link',
+        shouldCreateUser: false,
       );
     } on AuthException catch (e) {
       throw Exception('Failed to send OTP: ${e.message}');

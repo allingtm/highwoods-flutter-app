@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../utils/error_utils.dart';
 import '../../widgets/widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -18,7 +17,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
   bool _magicLinkSent = false;
-  String? _errorMessage;
 
   @override
   void dispose() {
@@ -31,23 +29,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
     });
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      await authRepository.sendOTP(email: _emailController.text.trim());
-
-      setState(() {
-        _magicLinkSent = true;
-        _isLoading = false;
-      });
+      await authRepository.sendLoginOTP(email: _emailController.text.trim());
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = getErrorMessage(e);
-      });
+      // Silently ignore errors to prevent user enumeration
+      // (don't reveal whether an email exists or not)
     }
+
+    // Always show success message for security
+    setState(() {
+      _magicLinkSent = true;
+      _isLoading = false;
+    });
   }
 
   void _dismissKeyboard() {
@@ -129,11 +125,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           },
                         ),
 
-                        if (_errorMessage != null) ...[
-                          SizedBox(height: tokens.spacingLg),
-                          AppErrorContainer(message: _errorMessage!),
-                        ],
-
                         SizedBox(height: tokens.spacingXl),
 
                         // Send button
@@ -185,7 +176,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           onPressed: () {
                             setState(() {
                               _magicLinkSent = false;
-                              _errorMessage = null;
                             });
                           },
                         ),
