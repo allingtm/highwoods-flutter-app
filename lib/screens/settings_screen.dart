@@ -556,7 +556,7 @@ class SettingsScreen extends ConsumerWidget {
           ListTile(
             leading: Icon(
               isSupporter ? Icons.star : Icons.star_border,
-              color: isSupporter ? Colors.amber : colorScheme.primary,
+              color: isSupporter ? context.colors.warning : colorScheme.primary,
             ),
             title: Text(
               isSupporter ? 'Highwoods Supporter' : 'Become a Supporter',

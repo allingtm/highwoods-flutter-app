@@ -6,7 +6,6 @@ import '../providers/auth_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../services/notification_navigation_service.dart';
 import '../theme/app_theme_tokens.dart';
-import '../theme/app_colors.dart';
 import 'feed/feed_screen.dart';
 import 'directory_screen.dart';
 import 'connections_screen.dart';
@@ -127,7 +126,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               bottom: tokens.spacingLg,
             ),
             decoration: BoxDecoration(
-              color: AppColors.brandPrimary,
+              color: colorScheme.primary,
             ),
             child: userProfile.when(
               data: (profile) => Column(
@@ -135,7 +134,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 children: [
                   CircleAvatar(
                     radius: 32,
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    backgroundColor: colorScheme.onPrimary.withValues(alpha: 0.2),
                     child: profile?.avatarUrl != null
                         ? ClipOval(
                             child: Image.network(
@@ -144,25 +143,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               height: 64,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
+                                return Icon(
                                   Icons.person,
                                   size: 32,
-                                  color: Colors.white,
+                                  color: colorScheme.onPrimary,
                                 );
                               },
                             ),
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.person,
                             size: 32,
-                            color: Colors.white,
+                            color: colorScheme.onPrimary,
                           ),
                   ),
                   SizedBox(height: tokens.spacingMd),
                   Text(
                     profile?.fullName ?? 'Highwoods Resident',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colorScheme.onPrimary,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
@@ -171,19 +170,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   Text(
                     profile?.email ?? '',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: colorScheme.onPrimary.withValues(alpha: 0.8),
                       fontSize: 14,
                     ),
                   ),
                 ],
               ),
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+              loading: () => Center(
+                child: CircularProgressIndicator(color: colorScheme.onPrimary),
               ),
-              error: (_, __) => const Icon(
+              error: (_, __) => Icon(
                 Icons.person,
                 size: 48,
-                color: Colors.white,
+                color: colorScheme.onPrimary,
               ),
             ),
           ),

@@ -7,7 +7,6 @@ import '../../models/post_status.dart';
 import '../../models/feed/feed_models.dart';
 import '../../providers/feed_provider.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/error_utils.dart';
 import '../../utils/post_validators.dart';
@@ -101,9 +100,9 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
                     child: Text('Mark as Expired'),
                   ),
                 ],
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete',
-                  child: Text('Delete Post', style: TextStyle(color: Colors.red)),
+                  child: Text('Delete Post', style: TextStyle(color: Theme.of(context).colorScheme.error)),
                 ),
               ],
             ),
@@ -115,7 +114,7 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, size: 48, color: AppColors.error),
+              Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
               const SizedBox(height: 16),
               Text('Failed to load post', style: AppTypography.headlineSmall),
               const SizedBox(height: 8),
@@ -143,17 +142,17 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
                   Container(
                     padding: EdgeInsets.all(tokens.spacingMd),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.1),
+                      color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(tokens.radiusMd),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: AppColors.error),
+                        Icon(Icons.error_outline, color: Theme.of(context).colorScheme.error),
                         SizedBox(width: tokens.spacingSm),
                         Expanded(
                           child: Text(
                             _errorMessage!,
-                            style: TextStyle(color: AppColors.error),
+                            style: TextStyle(color: Theme.of(context).colorScheme.error),
                           ),
                         ),
                       ],
@@ -288,7 +287,7 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
             child: const Text('Delete'),
           ),
         ],
@@ -398,7 +397,7 @@ class _PostTypeInfo extends StatelessWidget {
               Text(
                 post.postType.displayName,
                 style: AppTypography.caption.copyWith(
-                  color: AppColors.secondaryText,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

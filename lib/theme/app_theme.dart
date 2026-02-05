@@ -30,7 +30,7 @@ class AppTheme {
         secondaryContainer: palette.secondaryLight,
         onSecondaryContainer: isDark ? Colors.white : palette.secondaryDark,
         error: palette.error,
-        onError: Colors.white,
+        onError: isDark ? Colors.black : Colors.white,
         errorContainer: palette.errorLight,
         onErrorContainer: palette.errorDark,
         surface: palette.surface,
@@ -62,6 +62,10 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: palette.surface,
         elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: palette.borderLight),
+        ),
       ),
 
       // Input Decoration

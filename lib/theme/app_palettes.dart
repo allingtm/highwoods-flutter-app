@@ -332,10 +332,10 @@ class AppPalettes {
     warningLight: Color(0xFFFF9900),
     warningDark: Color(0xFF996600),
 
-    // Surfaces & Backgrounds - Pure white
+    // Surfaces & Backgrounds - Pure white bg, distinct surface
     background: Color(0xFFFFFFFF),
-    surface: Color(0xFFFFFFFF),
-    surfaceVariant: Color(0xFFF5F5F5),
+    surface: Color(0xFFF5F5F5),
+    surfaceVariant: Color(0xFFEEEEEE),
 
     // Text Colors - Maximum contrast
     textPrimary: Color(0xFF000000),

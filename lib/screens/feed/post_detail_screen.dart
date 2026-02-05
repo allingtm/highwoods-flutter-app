@@ -5,6 +5,7 @@ import '../../models/feed/feed_models.dart';
 import '../../providers/feed_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/image_url_service.dart';
+import '../../theme/app_color_palette.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common/app_cached_avatar.dart';
 import '../../widgets/common/app_cached_image.dart';
@@ -938,7 +939,7 @@ class _MarketplaceDetailsCard extends StatelessWidget {
             icon: Icons.sell_rounded,
             label: 'Price',
             value: details.priceDisplay,
-            valueColor: Colors.green.shade700,
+            valueColor: context.colors.success,
           ),
           if (details.conditionDisplay.isNotEmpty) ...[
             SizedBox(height: tokens.spacingSm),
@@ -1008,7 +1009,7 @@ class _LostFoundDetailsCard extends StatelessWidget {
                     vertical: tokens.spacingXs,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.amber.shade100,
+                    color: context.colors.warningLight,
                     borderRadius: BorderRadius.circular(tokens.radiusSm),
                   ),
                   child: Row(
@@ -1017,13 +1018,13 @@ class _LostFoundDetailsCard extends StatelessWidget {
                       Icon(
                         Icons.stars_rounded,
                         size: 14,
-                        color: Colors.amber.shade800,
+                        color: context.colors.warningDark,
                       ),
                       SizedBox(width: tokens.spacingXs),
                       Text(
                         details.rewardDisplay,
                         style: theme.textTheme.labelSmall?.copyWith(
-                          color: Colors.amber.shade800,
+                          color: context.colors.warningDark,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -1130,7 +1131,7 @@ class _JobDetailsCard extends StatelessWidget {
             icon: Icons.payments_rounded,
             label: 'Pay',
             value: details.payDisplay,
-            valueColor: Colors.green.shade700,
+            valueColor: context.colors.success,
           ),
           SizedBox(height: tokens.spacingSm),
           _DetailRow(
@@ -1217,13 +1218,13 @@ class _RecommendationDetailsCard extends StatelessWidget {
                 Icon(
                   Icons.star_rounded,
                   size: 18,
-                  color: Colors.amber.shade700,
+                  color: context.colors.warning,
                 ),
                 SizedBox(width: tokens.spacingSm),
                 Text(
                   details.ratingDisplay,
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.amber.shade700,
+                    color: context.colors.warning,
                     letterSpacing: 2,
                   ),
                 ),

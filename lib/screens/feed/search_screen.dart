@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../providers/feed_provider.dart';
 import '../../theme/app_color_palette.dart';
-import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
 import '../../widgets/feed/post_card.dart';
@@ -266,7 +265,7 @@ class _EmptyState extends StatelessWidget {
             Icon(
               icon,
               size: 64,
-              color: AppColors.hintText,
+              color: context.colors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
@@ -278,7 +277,7 @@ class _EmptyState extends StatelessWidget {
             Text(
               subtitle,
               style: AppTypography.bodyMedium.copyWith(
-                color: AppColors.secondaryText,
+                color: context.colors.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),

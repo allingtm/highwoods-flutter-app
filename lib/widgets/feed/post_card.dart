@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../models/post_category.dart';
 import '../../models/feed/feed_models.dart';
 import '../../services/image_url_service.dart';
+import '../../theme/app_color_palette.dart';
 import '../../theme/app_theme.dart';
 import '../common/app_cached_avatar.dart';
 import '../common/app_cached_image.dart';
@@ -444,7 +445,7 @@ class _AlertContent extends StatelessWidget {
     final tokens = context.tokens;
     final theme = Theme.of(context);
 
-    final priorityColor = _getPriorityColor(details.priority, theme);
+    final priorityColor = _getPriorityColor(details.priority, context);
 
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacingSm),
@@ -486,7 +487,7 @@ class _AlertContent extends StatelessWidget {
                 vertical: tokens.spacingXs,
               ),
               decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.15),
+                color: context.colors.success.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(tokens.radiusSm),
               ),
               child: Row(
@@ -495,13 +496,13 @@ class _AlertContent extends StatelessWidget {
                   Icon(
                     Icons.verified_rounded,
                     size: 12,
-                    color: Colors.green,
+                    color: context.colors.success,
                   ),
                   SizedBox(width: tokens.spacingXs),
                   Text(
                     'Verified',
                     style: theme.textTheme.labelSmall?.copyWith(
-                      color: Colors.green,
+                      color: context.colors.success,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -514,16 +515,17 @@ class _AlertContent extends StatelessWidget {
     );
   }
 
-  Color _getPriorityColor(AlertPriority priority, ThemeData theme) {
+  Color _getPriorityColor(AlertPriority priority, BuildContext context) {
+    final colors = context.colors;
     switch (priority) {
       case AlertPriority.critical:
-        return theme.colorScheme.error;
+        return Theme.of(context).colorScheme.error;
       case AlertPriority.high:
-        return Colors.orange;
+        return colors.warning;
       case AlertPriority.medium:
-        return Colors.amber;
+        return colors.warningLight;
       case AlertPriority.low:
-        return theme.colorScheme.primary;
+        return Theme.of(context).colorScheme.primary;
     }
   }
 }
@@ -561,7 +563,7 @@ class _LostFoundContent extends StatelessWidget {
             _InfoChip(
               icon: Icons.card_giftcard_rounded,
               label: details.rewardDisplay,
-              color: Colors.green,
+              color: context.colors.success,
             ),
         ],
       ),
@@ -641,7 +643,7 @@ class _RecommendationContent extends StatelessWidget {
             _InfoChip(
               icon: Icons.star_rounded,
               label: details.ratingDisplay,
-              color: Colors.amber,
+              color: context.colors.warning,
             ),
           if (details.priceRangeDisplay.isNotEmpty)
             _InfoChip(

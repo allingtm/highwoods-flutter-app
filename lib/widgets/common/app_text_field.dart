@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../theme/app_colors.dart';
+import '../../theme/app_color_palette.dart';
 
 class AppTextField extends StatelessWidget {
   const AppTextField({
@@ -176,7 +176,7 @@ class AppTextField extends StatelessWidget {
     if (isError) {
       counterColor = Theme.of(context).colorScheme.error;
     } else if (isWarning) {
-      counterColor = AppColors.warning;
+      counterColor = context.colors.warning;
     } else {
       counterColor = Theme.of(context).colorScheme.onSurfaceVariant;
     }

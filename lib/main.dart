@@ -123,7 +123,7 @@ class _MainAppState extends ConsumerState<MainApp> {
         action: notification.additionalData != null
             ? SnackBarAction(
                 label: 'View',
-                textColor: Colors.white,
+                textColor: Theme.of(context).colorScheme.onPrimary,
                 onPressed: () {
                   NotificationNavigationService.instance
                       .handleNotificationClick(notification.additionalData);

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_profile_provider.dart';
+import '../theme/app_color_palette.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 
@@ -221,7 +222,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   : Icons.error,
                               size: 16,
                               color: _isUsernameAvailable
-                                  ? Colors.green
+                                  ? context.colors.success
                                   : Theme.of(context).colorScheme.error,
                             ),
                             SizedBox(width: tokens.spacingSm),
@@ -234,7 +235,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   .bodySmall
                                   ?.copyWith(
                                     color: _isUsernameAvailable
-                                        ? Colors.green
+                                        ? context.colors.success
                                         : Theme.of(context).colorScheme.error,
                                   ),
                             ),

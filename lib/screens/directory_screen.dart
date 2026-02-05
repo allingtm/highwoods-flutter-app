@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/promo.dart';
 import '../providers/directory_provider.dart';
+import '../theme/app_color_palette.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_theme_tokens.dart';
 
@@ -494,7 +495,7 @@ class _PromoCard extends StatelessWidget {
                         Icon(
                           Icons.star,
                           size: tokens.iconSm,
-                          color: Colors.amber,
+                          color: context.colors.warning,
                         ),
                         SizedBox(width: tokens.spacingXs),
                         Text(

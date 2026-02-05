@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../models/promo.dart';
 import '../../models/testimonial.dart';
 import '../../providers/directory_provider.dart';
+import '../../theme/app_color_palette.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
 
@@ -151,13 +152,13 @@ class _PromoDetailScreenState extends ConsumerState<PromoDetailScreen> {
                         final rating = promo.averageRating!;
                         if (index < rating.floor()) {
                           return Icon(Icons.star,
-                              color: Colors.amber, size: tokens.iconSm);
+                              color: context.colors.warning, size: tokens.iconSm);
                         } else if (index < rating) {
                           return Icon(Icons.star_half,
-                              color: Colors.amber, size: tokens.iconSm);
+                              color: context.colors.warning, size: tokens.iconSm);
                         } else {
                           return Icon(Icons.star_border,
-                              color: Colors.amber, size: tokens.iconSm);
+                              color: context.colors.warning, size: tokens.iconSm);
                         }
                       }),
                       SizedBox(width: tokens.spacingSm),
@@ -719,7 +720,7 @@ class _TestimonialCard extends StatelessWidget {
                     5,
                     (index) => Icon(
                       index < testimonial.rating ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
+                      color: context.colors.warning,
                       size: 16,
                     ),
                   ),
@@ -822,7 +823,7 @@ class _AddTestimonialSheetState extends ConsumerState<_AddTestimonialSheet> {
                   return IconButton(
                     icon: Icon(
                       index < _rating ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
+                      color: context.colors.warning,
                       size: 32,
                     ),
                     onPressed: () => setState(() => _rating = index + 1),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:introduction_screen/introduction_screen.dart';
 import 'package:animate_do/animate_do.dart';
+import '../theme/app_color_palette.dart';
 import '../theme/app_theme.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -14,10 +15,10 @@ class WelcomeScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    const lightGreen = Color(0xFFE8F5E9);
+    final welcomeBackground = context.colors.primaryLight;
 
     return Scaffold(
-      backgroundColor: lightGreen,
+      backgroundColor: welcomeBackground,
       body: SafeArea(
         child: Column(
           children: [
@@ -117,7 +118,7 @@ class WelcomeScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                globalBackgroundColor: lightGreen,
+                globalBackgroundColor: welcomeBackground,
                 curve: Curves.easeInOut,
               ),
             ),
@@ -440,10 +441,10 @@ class _StableTypewriterState extends State<_StableTypewriter> {
                         text: _getNextChar() ?? ' ',
                         style: TextStyle(
                           color: _showCursor
-                              ? Colors.white
+                              ? Theme.of(context).colorScheme.onPrimary
                               : Colors.transparent,
                           backgroundColor: _showCursor
-                              ? const Color(0xFF4A7C59)
+                              ? Theme.of(context).colorScheme.primary
                               : Colors.transparent,
                         ),
                       ),
