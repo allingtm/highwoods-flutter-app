@@ -42,14 +42,54 @@ class PostCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image (if present)
-            if (post.primaryImageUrl != null)
+            // Media (image or video thumbnail)
+            if (post.primaryImageUrl != null || post.videoThumbnailUrl != null)
               AspectRatio(
                 aspectRatio: 16 / 9,
-                child: AppCachedImage(
-                  imageUrl: post.primaryImageUrl!,
-                  size: ImageSize.thumbnail,
-                  fit: BoxFit.cover,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AppCachedImage(
+                      imageUrl: post.primaryImageUrl ?? post.videoThumbnailUrl!,
+                      size: ImageSize.thumbnail,
+                      fit: BoxFit.cover,
+                    ),
+                    // Video play button overlay
+                    if (post.hasVideo && post.isVideoReady)
+                      Center(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                    // Video processing indicator
+                    if (post.hasVideo && post.isVideoProcessing)
+                      Center(
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
 

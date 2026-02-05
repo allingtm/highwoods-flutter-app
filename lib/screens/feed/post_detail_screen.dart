@@ -9,6 +9,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common/app_cached_avatar.dart';
 import '../../widgets/common/app_cached_image.dart';
 import '../../widgets/feed/feed_widgets.dart';
+import '../../widgets/feed/post_video_player.dart';
 
 /// Full post detail screen with comments
 class PostDetailScreen extends ConsumerStatefulWidget {
@@ -489,6 +490,41 @@ class _PostContent extends StatelessWidget {
             post.title!,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+
+        // Video player
+        if (post.hasVideo && post.isVideoReady) ...[
+          SizedBox(height: tokens.spacingMd),
+          PostVideoPlayer(
+            playbackUrl: post.videoPlaybackUrl!,
+            thumbnailUrl: post.videoThumbnailUrl,
+          ),
+        ] else if (post.hasVideo && post.isVideoProcessing) ...[
+          SizedBox(height: tokens.spacingMd),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
+            child: AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(),
+                      SizedBox(height: tokens.spacingSm),
+                      Text(
+                        'Video is processing...',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],

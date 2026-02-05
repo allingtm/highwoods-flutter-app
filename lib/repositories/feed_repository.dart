@@ -10,11 +10,21 @@ import '../models/post_category.dart';
 import '../models/post_type.dart';
 import '../models/feed/feed_models.dart';
 import '../services/r2_storage_service.dart';
+import '../services/cloudflare_stream_service.dart';
 
 /// Exception thrown when image validation fails
 class ImageValidationException implements Exception {
   final String message;
   ImageValidationException(this.message);
+
+  @override
+  String toString() => message;
+}
+
+/// Exception thrown when video validation fails
+class VideoValidationException implements Exception {
+  final String message;
+  VideoValidationException(this.message);
 
   @override
   String toString() => message;
@@ -1053,6 +1063,159 @@ class FeedRepository {
       throw Exception('Failed to reorder images: ${e.message}');
     } catch (e) {
       throw Exception('Failed to reorder images: $e');
+    }
+  }
+
+  // ============================================================
+  // Video Upload
+  // ============================================================
+
+  /// Allowed video MIME types
+  static const _allowedVideoMimeTypes = [
+    'video/mp4',
+    'video/quicktime',
+    'video/x-m4v',
+  ];
+
+  /// Maximum video file size in bytes (200MB - Cloudflare Stream direct upload limit)
+  static const _maxVideoFileSizeBytes = 200 * 1024 * 1024;
+
+  /// Maximum video duration in seconds (5 minutes)
+  static const _maxVideoDurationSeconds = 300;
+
+  /// Exception thrown when video validation fails
+  /// Validates a video file before upload
+  /// Throws [VideoValidationException] if validation fails
+  Future<void> validateVideo(File file, {int? durationSeconds}) async {
+    // Check file size
+    final fileSize = await file.length();
+    if (fileSize > _maxVideoFileSizeBytes) {
+      throw VideoValidationException(
+        'Video too large. Maximum size is 200MB',
+      );
+    }
+
+    // Check MIME type from file header bytes
+    final headerBytes = await file.openRead(0, 16).fold<List<int>>(
+      [],
+      (prev, chunk) => prev..addAll(chunk),
+    );
+    final mimeType = lookupMimeType(file.path, headerBytes: headerBytes);
+    if (mimeType == null || !_allowedVideoMimeTypes.contains(mimeType)) {
+      throw VideoValidationException(
+        'Invalid video type. Allowed: MP4, MOV',
+      );
+    }
+
+    // Check duration if provided
+    if (durationSeconds != null && durationSeconds > _maxVideoDurationSeconds) {
+      throw VideoValidationException(
+        'Video too long. Maximum duration is 5 minutes',
+      );
+    }
+  }
+
+  /// Uploads a video to Cloudflare Stream and creates a post_videos record
+  /// Returns the created [PostVideo]
+  Future<PostVideo> uploadPostVideo({
+    required String postId,
+    required File file,
+    int? durationSeconds,
+  }) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('User must be authenticated to upload videos');
+      }
+
+      // Validate the video
+      await validateVideo(file, durationSeconds: durationSeconds);
+
+      // Get direct upload URL from Cloudflare Stream
+      final streamService = CloudflareStreamService();
+      final uploadUrl = await streamService.createDirectUpload();
+
+      // Upload the video to Stream
+      await streamService.uploadVideoToStream(
+        uploadUrl: uploadUrl.uploadUrl,
+        videoFile: file,
+      );
+
+      // Get file size
+      final fileSize = await file.length();
+
+      // Create the database record with 'processing' status
+      final response = await _supabase.from('post_videos').insert({
+        'post_id': postId,
+        'stream_video_uid': uploadUrl.videoUid,
+        'status': 'processing',
+        'file_size': fileSize,
+        if (durationSeconds != null) 'duration_seconds': durationSeconds,
+      }).select().single();
+
+      return PostVideo.fromJson(response);
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to save video record: ${e.message}');
+    } catch (e) {
+      if (e is VideoValidationException) rethrow;
+      throw Exception('Failed to upload video: $e');
+    }
+  }
+
+  /// Gets the video for a post
+  Future<PostVideo?> getPostVideo(String postId) async {
+    try {
+      final response = await _supabase
+          .from('post_videos')
+          .select()
+          .eq('post_id', postId)
+          .maybeSingle();
+
+      if (response == null) return null;
+      return PostVideo.fromJson(response);
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to fetch video: ${e.message}');
+    }
+  }
+
+  /// Polls Cloudflare Stream for video processing status and updates the DB
+  /// Returns the updated [PostVideo]
+  Future<PostVideo> pollVideoStatus(String postId, String videoUid) async {
+    try {
+      final streamService = CloudflareStreamService();
+      final info = await streamService.getVideoStatus(videoUid);
+
+      // Update the database record with the latest status
+      final response = await _supabase.from('post_videos').update({
+        'status': info.status,
+        if (info.thumbnailUrl != null) 'thumbnail_url': info.thumbnailUrl,
+        if (info.playbackUrl != null) 'playback_url': info.playbackUrl,
+        if (info.duration != null) 'duration_seconds': info.duration,
+        if (info.width != null) 'width': info.width,
+        if (info.height != null) 'height': info.height,
+      }).eq('post_id', postId).select().single();
+
+      return PostVideo.fromJson(response);
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to update video status: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to poll video status: $e');
+    }
+  }
+
+  /// Deletes a post video (both from Stream and database)
+  Future<void> deletePostVideo(String videoId, String streamVideoUid) async {
+    try {
+      // Delete from Cloudflare Stream
+      final streamService = CloudflareStreamService();
+      await streamService.deleteVideo(streamVideoUid);
+
+      // Delete the database record
+      await _supabase.from('post_videos').delete().eq('id', videoId);
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to delete video record: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to delete video: $e');
     }
   }
 

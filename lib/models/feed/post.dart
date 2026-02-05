@@ -8,6 +8,7 @@ import 'lost_found_details.dart';
 import 'job_details.dart';
 import 'recommendation_details.dart';
 import 'post_image.dart';
+import 'post_video.dart';
 
 /// Sentinel value to distinguish "not provided" from "explicitly null" in copyWith
 class _Sentinel {
@@ -39,6 +40,12 @@ class Post {
   final List<PostImage> images;
   final String? primaryImageUrl;
 
+  // Video
+  final PostVideo? video;
+  final String? videoThumbnailUrl;
+  final String? videoPlaybackUrl;
+  final String? videoStatus;
+
   // Type-specific details (only one will be populated based on category)
   final MarketplaceDetails? marketplaceDetails;
   final EventDetails? eventDetails;
@@ -69,6 +76,10 @@ class Post {
     this.authorIsVerified = false,
     this.images = const [],
     this.primaryImageUrl,
+    this.video,
+    this.videoThumbnailUrl,
+    this.videoPlaybackUrl,
+    this.videoStatus,
     this.marketplaceDetails,
     this.eventDetails,
     this.alertDetails,
@@ -112,6 +123,10 @@ class Post {
       authorAvatarUrl: json['author_avatar_url'] as String?,
       authorIsVerified: json['author_role'] == 'admin' || json['author_role'] == 'moderator',
       primaryImageUrl: json['primary_image_url'] as String?,
+      // Video fields from view
+      videoThumbnailUrl: json['video_thumbnail_url'] as String?,
+      videoPlaybackUrl: json['video_playback_url'] as String?,
+      videoStatus: json['video_status'] as String?,
       // Category-specific details
       marketplaceDetails: category == PostCategory.marketplace
           ? MarketplaceDetails.fromFeedJson(json)
@@ -146,6 +161,10 @@ class Post {
         ?.map((e) => PostImage.fromJson(e as Map<String, dynamic>))
         .toList() ?? [];
 
+    // Parse video if present
+    final videoJson = json['video'] as Map<String, dynamic>?;
+    final video = videoJson != null ? PostVideo.fromJson(videoJson) : null;
+
     return Post(
       id: json['id'] as String,
       userId: json['user_id'] as String,
@@ -164,6 +183,10 @@ class Post {
       authorIsVerified: json['author_is_verified'] as bool? ?? false,
       images: images,
       primaryImageUrl: images.isNotEmpty ? images.first.url : null,
+      video: video,
+      videoThumbnailUrl: video?.thumbnailUrl,
+      videoPlaybackUrl: video?.playbackUrl,
+      videoStatus: video?.status.dbValue,
       marketplaceDetails: json['marketplace_details'] != null
           ? MarketplaceDetails.fromJson(json['marketplace_details'] as Map<String, dynamic>)
           : null,
@@ -236,6 +259,10 @@ class Post {
     bool? authorIsVerified,
     List<PostImage>? images,
     String? primaryImageUrl,
+    Object? video = _sentinel,
+    Object? videoThumbnailUrl = _sentinel,
+    Object? videoPlaybackUrl = _sentinel,
+    Object? videoStatus = _sentinel,
     MarketplaceDetails? marketplaceDetails,
     EventDetails? eventDetails,
     AlertDetails? alertDetails,
@@ -264,6 +291,16 @@ class Post {
       authorIsVerified: authorIsVerified ?? this.authorIsVerified,
       images: images ?? this.images,
       primaryImageUrl: primaryImageUrl ?? this.primaryImageUrl,
+      video: video == _sentinel ? this.video : video as PostVideo?,
+      videoThumbnailUrl: videoThumbnailUrl == _sentinel
+          ? this.videoThumbnailUrl
+          : videoThumbnailUrl as String?,
+      videoPlaybackUrl: videoPlaybackUrl == _sentinel
+          ? this.videoPlaybackUrl
+          : videoPlaybackUrl as String?,
+      videoStatus: videoStatus == _sentinel
+          ? this.videoStatus
+          : videoStatus as String?,
       marketplaceDetails: marketplaceDetails ?? this.marketplaceDetails,
       eventDetails: eventDetails ?? this.eventDetails,
       alertDetails: alertDetails ?? this.alertDetails,
@@ -280,6 +317,10 @@ class Post {
 
   // Convenience getters
   bool get hasImages => images.isNotEmpty || primaryImageUrl != null;
+  bool get hasVideo => video != null || videoThumbnailUrl != null;
+  bool get hasMedia => hasImages || hasVideo;
+  bool get isVideoReady => videoStatus == 'ready';
+  bool get isVideoProcessing => videoStatus == 'processing';
   bool get isEvent => eventDetails != null;
   bool get isAlert => alertDetails != null;
   bool get isMarketplace => marketplaceDetails != null;

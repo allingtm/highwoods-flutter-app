@@ -454,6 +454,8 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
     JobDetails? jobDetails,
     RecommendationDetails? recommendationDetails,
     List<File>? imageFiles,
+    File? videoFile,
+    int? videoDurationSeconds,
   }) async {
     try {
       // Create the post first
@@ -470,7 +472,7 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
         recommendationDetails: recommendationDetails,
       );
 
-      // Upload images if provided
+      // Upload images if provided (mutually exclusive with video)
       List<PostImage>? uploadedImages;
       if (imageFiles != null && imageFiles.isNotEmpty) {
         uploadedImages = await _repository.uploadPostImages(
@@ -479,21 +481,103 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
         );
       }
 
-      // Get the updated post with images
-      final postWithImages = uploadedImages != null
-          ? post.copyWith(
-              images: uploadedImages,
-              primaryImageUrl: uploadedImages.isNotEmpty ? uploadedImages.first.url : null,
-            )
-          : post;
+      // Upload video if provided (mutually exclusive with images)
+      PostVideo? uploadedVideo;
+      if (videoFile != null) {
+        uploadedVideo = await _repository.uploadPostVideo(
+          postId: post.id,
+          file: videoFile,
+          durationSeconds: videoDurationSeconds,
+        );
+      }
+
+      // Build the updated post with media
+      var postWithMedia = post;
+      if (uploadedImages != null) {
+        postWithMedia = postWithMedia.copyWith(
+          images: uploadedImages,
+          primaryImageUrl: uploadedImages.isNotEmpty ? uploadedImages.first.url : null,
+        );
+      }
+      if (uploadedVideo != null) {
+        postWithMedia = postWithMedia.copyWith(
+          video: uploadedVideo,
+          videoStatus: uploadedVideo.status.dbValue,
+        );
+      }
 
       // Add to feed
-      _ref.read(feedPostsNotifierProvider.notifier).prependPost(postWithImages);
+      _ref.read(feedPostsNotifierProvider.notifier).prependPost(postWithMedia);
 
       // Invalidate user posts
       _ref.invalidate(userPostsProvider);
 
-      return postWithImages;
+      // Start polling for video processing in the background
+      if (uploadedVideo != null) {
+        _pollVideoProcessing(post.id, uploadedVideo.streamVideoUid);
+      }
+
+      return postWithMedia;
+    } catch (e) {
+      state = AsyncValue.error(e, StackTrace.current);
+      rethrow;
+    }
+  }
+
+  /// Polls for video processing completion in the background
+  void _pollVideoProcessing(String postId, String videoUid) async {
+    const pollInterval = Duration(seconds: 5);
+    const maxAttempts = 24; // 2 minutes max polling
+
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      await Future.delayed(pollInterval);
+
+      try {
+        final updatedVideo = await _repository.pollVideoStatus(postId, videoUid);
+
+        if (updatedVideo.status == VideoStatus.ready ||
+            updatedVideo.status == VideoStatus.error) {
+          // Update the post in the cache with the final video state
+          final cachedPost = _ref.read(postCacheProvider)[postId];
+          if (cachedPost != null) {
+            final updatedPost = cachedPost.copyWith(
+              video: updatedVideo,
+              videoThumbnailUrl: updatedVideo.thumbnailUrl,
+              videoPlaybackUrl: updatedVideo.playbackUrl,
+              videoStatus: updatedVideo.status.dbValue,
+            );
+            _ref.read(postCacheProvider.notifier).updatePost(updatedPost);
+            _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
+          }
+          return; // Stop polling
+        }
+      } catch (_) {
+        // Silently continue polling on error
+      }
+    }
+  }
+
+  /// Delete a video from a post
+  Future<void> deletePostVideo({
+    required String videoId,
+    required String streamVideoUid,
+    required String postId,
+  }) async {
+    try {
+      await _repository.deletePostVideo(videoId, streamVideoUid);
+
+      // Update the post in the cache
+      final cachedPost = _ref.read(postCacheProvider)[postId];
+      if (cachedPost != null) {
+        final updatedPost = cachedPost.copyWith(
+          video: null,
+          videoThumbnailUrl: null,
+          videoPlaybackUrl: null,
+          videoStatus: null,
+        );
+        _ref.read(postCacheProvider.notifier).updatePost(updatedPost);
+        _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
+      }
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
       rethrow;

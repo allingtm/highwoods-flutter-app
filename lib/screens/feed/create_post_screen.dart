@@ -13,6 +13,7 @@ import '../../utils/post_validators.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 import '../../widgets/feed/image_picker_widget.dart';
+import '../../widgets/feed/media_picker_widget.dart';
 
 /// Wizard steps for creating a post
 enum CreatePostStep {
@@ -46,8 +47,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Images
+  // Media
   List<SelectedImage> _selectedImages = [];
+  SelectedVideo? _selectedVideo;
 
   // Category-specific controllers
   // Marketplace
@@ -341,13 +343,19 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         ),
         SizedBox(height: tokens.spacingLg),
 
-        // Image picker
-        ImagePickerWidget(
+        // Media picker (photos or video)
+        MediaPickerWidget(
           images: _selectedImages,
+          video: _selectedVideo,
           maxImages: 5,
           onImagesChanged: (images) {
             setState(() {
               _selectedImages = images;
+            });
+          },
+          onVideoChanged: (video) {
+            setState(() {
+              _selectedVideo = video;
             });
           },
           onError: (error) {
@@ -556,7 +564,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         );
       }
 
-      // Extract files from selected images
+      // Extract files from selected media
       final imageFiles = _selectedImages.map((img) => img.file).toList();
 
       await ref.read(feedActionsProvider.notifier).createPost(
@@ -568,6 +576,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         lostFoundDetails: lostFoundDetails,
         jobDetails: jobDetails,
         imageFiles: imageFiles.isNotEmpty ? imageFiles : null,
+        videoFile: _selectedVideo?.file,
+        videoDurationSeconds: _selectedVideo?.durationSeconds,
       );
 
       if (mounted) {

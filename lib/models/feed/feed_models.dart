@@ -1,6 +1,7 @@
 // Feed models barrel export
 export 'post.dart';
 export 'post_image.dart';
+export 'post_video.dart';
 export 'post_comment.dart';
 export 'post_reaction.dart';
 export 'event_rsvp.dart';
