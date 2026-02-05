@@ -26,6 +26,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
   late int _selectedIndex;
+  bool _showBottomNav = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -69,16 +70,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Scaffold(
       key: _scaffoldKey,
       drawer: _buildDrawer(context, tokens, colorScheme),
-      body: IndexedStack(
-        index: _selectedIndex,
+      body: Stack(
         children: [
-          FeedScreen(onMenuTap: _openDrawer),
-          DirectoryScreen(onMenuTap: _openDrawer),
-          MessagesListScreen(onMenuTap: _openDrawer),
-          ConnectionsScreen(onMenuTap: _openDrawer),
+          IndexedStack(
+            index: _selectedIndex,
+            children: [
+              FeedScreen(
+                onMenuTap: _openDrawer,
+                onScrollVisibilityChanged: (visible) {
+                  if (_showBottomNav != visible) {
+                    setState(() => _showBottomNav = visible);
+                  }
+                },
+              ),
+              DirectoryScreen(onMenuTap: _openDrawer),
+              MessagesListScreen(onMenuTap: _openDrawer),
+              ConnectionsScreen(onMenuTap: _openDrawer),
+            ],
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              offset: _showBottomNav ? Offset.zero : const Offset(0, 1),
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _showBottomNav ? 1.0 : 0.0,
+                child: IgnorePointer(
+                  ignoring: !_showBottomNav,
+                  child: _buildBottomNavBar(context),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
     );
   }
 
@@ -359,7 +388,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _selectedIndex = index),
+        onTap: () => setState(() {
+          _selectedIndex = index;
+          _showBottomNav = true;
+        }),
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),

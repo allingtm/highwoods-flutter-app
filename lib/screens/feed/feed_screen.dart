@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../models/post_category.dart';
@@ -9,10 +10,13 @@ import '../../widgets/feed/feed_widgets.dart';
 
 /// Main feed screen displaying community posts
 class FeedScreen extends ConsumerStatefulWidget {
-  const FeedScreen({super.key, this.onMenuTap});
+  const FeedScreen({super.key, this.onMenuTap, this.onScrollVisibilityChanged});
 
   /// Callback to open the side menu drawer
   final VoidCallback? onMenuTap;
+
+  /// Callback when scroll direction changes (true = show controls, false = hide)
+  final ValueChanged<bool>? onScrollVisibilityChanged;
 
   @override
   ConsumerState<FeedScreen> createState() => _FeedScreenState();
@@ -21,6 +25,7 @@ class FeedScreen extends ConsumerStatefulWidget {
 class _FeedScreenState extends ConsumerState<FeedScreen> {
   final ScrollController _scrollController = ScrollController();
   int _newPostsCount = 0;
+  bool _showControls = true;
 
   @override
   void initState() {
@@ -44,6 +49,25 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
         notifier.loadMore();
       }
     }
+
+    // Always show controls when at the top
+    if (_scrollController.offset <= 0) {
+      if (!_showControls) {
+        setState(() => _showControls = true);
+        widget.onScrollVisibilityChanged?.call(true);
+      }
+      return;
+    }
+
+    // Hide on scroll down, show on scroll up
+    final direction = _scrollController.position.userScrollDirection;
+    if (direction == ScrollDirection.reverse && _showControls) {
+      setState(() => _showControls = false);
+      widget.onScrollVisibilityChanged?.call(false);
+    } else if (direction == ScrollDirection.forward && !_showControls) {
+      setState(() => _showControls = true);
+      widget.onScrollVisibilityChanged?.call(true);
+    }
   }
 
   void _scrollToTop() {
@@ -55,6 +79,26 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     setState(() {
       _newPostsCount = 0;
     });
+  }
+
+  Widget _buildAnimatedFab(Widget fab) {
+    final bottomPadding = MediaQuery.of(context).padding.bottom + 64;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomPadding),
+      child: AnimatedSlide(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        offset: _showControls ? Offset.zero : const Offset(1, 0),
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: _showControls ? 1.0 : 0.0,
+          child: IgnorePointer(
+            ignoring: !_showControls,
+            child: fab,
+          ),
+        ),
+      ),
+    );
   }
 
   void _onCategorySelected(PostCategory? category) {
@@ -197,20 +241,20 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
 
       // New posts indicator (uses _scrollToTop when real-time updates are enabled)
       floatingActionButton: _newPostsCount > 0
-          ? FloatingActionButton.extended(
+          ? _buildAnimatedFab(FloatingActionButton.extended(
               heroTag: null,
               onPressed: _scrollToTop,
               icon: const Icon(Icons.arrow_upward_rounded),
               label: Text('$_newPostsCount new'),
-            )
+            ))
           : (isAuthenticated
-              ? FloatingActionButton.extended(
+              ? _buildAnimatedFab(FloatingActionButton.extended(
                   heroTag: null,
                   onPressed: () => context.push(
                       '/create-post${selectedCategory != null ? '?category=${selectedCategory.dbValue}' : ''}'),
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Post'),
-                )
+                ))
               : null),
     );
   }
