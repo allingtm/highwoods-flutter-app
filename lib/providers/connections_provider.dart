@@ -414,16 +414,43 @@ class ConnectionsRealtimeManager {
   final ConnectionsRepository _repository;
   RealtimeChannel? _messagesChannel;
   RealtimeChannel? _connectionsChannel;
+  bool _isSubscribed = false;
+
+  /// The user ID of the currently open conversation (if any).
+  /// When set, incoming messages from this user will also refresh
+  /// the messagesProvider for live conversation updates.
+  String? _activeConversationUserId;
+
+  void setActiveConversation(String? userId) {
+    _activeConversationUserId = userId;
+  }
 
   void subscribeToMessages() {
+    if (_messagesChannel != null) {
+      _repository.unsubscribe(_messagesChannel!);
+      _messagesChannel = null;
+    }
     _messagesChannel = _repository.subscribeToMessages(
       onNewMessage: (message) {
         _ref.read(conversationsProvider.notifier).updateConversation(message);
+        // If this message is from/to the active conversation, refresh messages
+        if (_activeConversationUserId != null &&
+            (message.senderId == _activeConversationUserId ||
+                message.recipientId == _activeConversationUserId)) {
+          _ref.invalidate(messagesProvider(_activeConversationUserId!));
+          // Auto-mark as read since the conversation is open
+          _repository.markMessagesAsRead(_activeConversationUserId!);
+          _ref.read(conversationsProvider.notifier).markAsRead(_activeConversationUserId!);
+        }
       },
     );
   }
 
   void subscribeToConnectionRequests() {
+    if (_connectionsChannel != null) {
+      _repository.unsubscribe(_connectionsChannel!);
+      _connectionsChannel = null;
+    }
     _connectionsChannel = _repository.subscribeToConnectionRequests(
       onNewRequest: (connection) {
         _ref.read(pendingRequestsProvider.notifier).addRequest(connection);
@@ -432,16 +459,21 @@ class ConnectionsRealtimeManager {
   }
 
   void subscribeAll() {
+    if (_isSubscribed) return;
+    _isSubscribed = true;
     subscribeToMessages();
     subscribeToConnectionRequests();
   }
 
   Future<void> dispose() async {
+    _isSubscribed = false;
     if (_messagesChannel != null) {
       await _repository.unsubscribe(_messagesChannel!);
+      _messagesChannel = null;
     }
     if (_connectionsChannel != null) {
       await _repository.unsubscribe(_connectionsChannel!);
+      _connectionsChannel = null;
     }
   }
 }

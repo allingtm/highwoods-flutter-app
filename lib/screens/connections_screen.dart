@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../models/connection.dart';
 import '../providers/connections_provider.dart';
+import '../providers/presence_provider.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_theme_tokens.dart';
 
@@ -21,10 +22,6 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
   @override
   void initState() {
     super.initState();
-    // Subscribe to real-time updates when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(connectionsRealtimeProvider).subscribeAll();
-    });
   }
 
   @override
@@ -245,6 +242,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
   ) {
     final user = connection.otherUser;
     if (user == null) return const SizedBox.shrink();
+    final isOnline = ref.watch(isUserOnlineProvider(user.id));
 
     return Card(
       child: InkWell(
@@ -255,23 +253,41 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: colorScheme.primaryContainer,
-                backgroundImage:
-                    user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
-                child: user.avatarUrl == null
-                    ? Text(
-                        user.fullName.isNotEmpty
-                            ? user.fullName[0].toUpperCase()
-                            : '?',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onPrimaryContainer,
+              Stack(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: colorScheme.primaryContainer,
+                    backgroundImage:
+                        user.avatarUrl != null ? NetworkImage(user.avatarUrl!) : null,
+                    child: user.avatarUrl == null
+                        ? Text(
+                            user.fullName.isNotEmpty
+                                ? user.fullName[0].toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onPrimaryContainer,
+                            ),
+                          )
+                        : null,
+                  ),
+                  if (isOnline)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colorScheme.surface, width: 2),
                         ),
-                      )
-                    : null,
+                      ),
+                    ),
+                ],
               ),
               SizedBox(height: tokens.spacingSm),
               Text(

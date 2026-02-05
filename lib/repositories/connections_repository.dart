@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/connection.dart';
@@ -667,10 +668,10 @@ class ConnectionsRepository {
   }
 
   // ============================================================
-  // Real-time Subscriptions
+  // Real-time Subscriptions (Broadcast)
   // ============================================================
 
-  /// Subscribes to new messages for the current user
+  /// Subscribes to new messages for the current user via Broadcast
   RealtimeChannel subscribeToMessages({
     required void Function(Message message) onNewMessage,
   }) {
@@ -680,25 +681,25 @@ class ConnectionsRepository {
     }
 
     return _supabase
-        .channel('messages:$userId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'recipient_id',
-            value: userId,
-          ),
+        .channel(
+          'user:$userId:messages',
+          opts: const RealtimeChannelConfig(private: true),
+        )
+        .onBroadcast(
+          event: 'INSERT',
           callback: (payload) {
-            final message = Message.fromJson(payload.newRecord);
-            onNewMessage(message);
+            try {
+              final message = Message.fromJson(payload);
+              onNewMessage(message);
+            } catch (e) {
+              debugPrint('Error parsing broadcast message: $e');
+            }
           },
         )
         .subscribe();
   }
 
-  /// Subscribes to connection requests for the current user
+  /// Subscribes to connection requests for the current user via Broadcast
   RealtimeChannel subscribeToConnectionRequests({
     required void Function(Connection connection) onNewRequest,
   }) {
@@ -708,35 +709,35 @@ class ConnectionsRepository {
     }
 
     return _supabase
-        .channel('connections:$userId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'connections',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'recipient_id',
-            value: userId,
-          ),
+        .channel(
+          'user:$userId:connections',
+          opts: const RealtimeChannelConfig(private: true),
+        )
+        .onBroadcast(
+          event: 'INSERT',
           callback: (payload) async {
-            // Fetch full connection with profile data
-            final connectionId = payload.newRecord['id'] as String;
-            final response = await _supabase
-                .from('connections')
-                .select('''
-                  *,
-                  requester:requester_id (
-                    id, email, username, first_name, last_name, avatar_url, bio, role, created_at, updated_at
-                  ),
-                  recipient:recipient_id (
-                    id, email, username, first_name, last_name, avatar_url, bio, role, created_at, updated_at
-                  )
-                ''')
-                .eq('id', connectionId)
-                .single();
+            try {
+              final connectionId = payload['id'] as String;
+              // Fetch full connection with profile data
+              final response = await _supabase
+                  .from('connections')
+                  .select('''
+                    *,
+                    requester:requester_id (
+                      id, email, username, first_name, last_name, avatar_url, bio, role, created_at, updated_at
+                    ),
+                    recipient:recipient_id (
+                      id, email, username, first_name, last_name, avatar_url, bio, role, created_at, updated_at
+                    )
+                  ''')
+                  .eq('id', connectionId)
+                  .single();
 
-            final connection = Connection.fromJson(response, currentUserId: userId);
-            onNewRequest(connection);
+              final connection = Connection.fromJson(response, currentUserId: userId);
+              onNewRequest(connection);
+            } catch (e) {
+              debugPrint('Error handling connection broadcast: $e');
+            }
           },
         )
         .subscribe();

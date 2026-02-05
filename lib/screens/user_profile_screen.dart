@@ -7,6 +7,7 @@ import '../models/feed/feed_models.dart';
 import '../providers/auth_provider.dart';
 import '../providers/connections_provider.dart';
 import '../providers/feed_provider.dart';
+import '../providers/follow_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
 import '../widgets/feed/post_card.dart';
@@ -39,6 +40,7 @@ class UserProfileScreen extends ConsumerStatefulWidget {
 class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _bioExpanded = false;
 
   @override
   void initState() {
@@ -72,22 +74,30 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
             );
           }
 
+          final showMessageButton = currentUser != null &&
+              !isOwnProfile &&
+              !widget.hideMessageButton &&
+              (profile.allowOpenMessaging ||
+                  connectionAsync.valueOrNull?.status == ConnectionStatus.accepted);
+          final hasBio = profile.bio != null && profile.bio!.isNotEmpty;
+          final bioExtra = hasBio ? (_bioExpanded ? 150.0 : 50.0) : 0.0;
+          final headerHeight = (isOwnProfile ? 320.0 : 380.0) + bioExtra;
+
           return NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) => [
               SliverAppBar(
-                expandedHeight: 320,
+                expandedHeight: headerHeight,
                 floating: false,
                 pinned: true,
                 forceElevated: innerBoxIsScrolled,
                 flexibleSpace: LayoutBuilder(
                   builder: (context, constraints) {
-                    final expandedHeight = 320.0;
                     final collapsedHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
                     final currentHeight = constraints.maxHeight;
                     final tabBarHeight = 48.0;
 
                     // Calculate opacity: fade out as we approach collapsed state
-                    final availableRange = expandedHeight - collapsedHeight - tabBarHeight;
+                    final availableRange = headerHeight - collapsedHeight - tabBarHeight;
                     final currentOffset = currentHeight - collapsedHeight - tabBarHeight;
                     final opacity = (currentOffset / availableRange).clamp(0.0, 1.0);
 
@@ -97,23 +107,23 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
                           opacity: opacity,
                           child: _ProfileHeader(
                             profile: profile,
+                            isOwnProfile: isOwnProfile,
+                            showMessageButton: showMessageButton,
+                            onMessageTap: () {
+                              context.push('/connections/conversation/${widget.userId}');
+                            },
+                            userId: widget.userId,
+                            bioExpanded: _bioExpanded,
+                            onBioToggle: () {
+                              setState(() => _bioExpanded = !_bioExpanded);
+                            },
                           ),
                         ),
                       ),
                     );
                   },
                 ),
-                bottom: _ProfileTabBar(
-                  tabController: _tabController,
-                  showMessageButton: currentUser != null &&
-                      !isOwnProfile &&
-                      !widget.hideMessageButton &&
-                      (profile.allowOpenMessaging ||
-                          connectionAsync.valueOrNull?.status == ConnectionStatus.accepted),
-                  onMessageTap: () {
-                    context.push('/connections/conversation/${widget.userId}');
-                  },
-                ),
+                bottom: _ProfileTabBar(tabController: _tabController),
               ),
             ],
             body: TabBarView(
@@ -182,63 +192,123 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
   }
 }
 
-/// Custom tab bar with optional message button
+/// Tab bar with Posts, Comments, and Likes tabs
 class _ProfileTabBar extends StatelessWidget implements PreferredSizeWidget {
-  const _ProfileTabBar({
-    required this.tabController,
-    required this.showMessageButton,
-    this.onMessageTap,
-  });
+  const _ProfileTabBar({required this.tabController});
 
   final TabController tabController;
-  final bool showMessageButton;
-  final VoidCallback? onMessageTap;
 
   @override
   Size get preferredSize => const Size.fromHeight(48);
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        if (showMessageButton)
-          Padding(
-            padding: const EdgeInsets.only(left: 12.0),
-            child: IconButton.filled(
-              onPressed: onMessageTap,
-              icon: const Icon(Icons.message_outlined, size: 20),
-              style: IconButton.styleFrom(
-                minimumSize: const Size(40, 40),
-              ),
-            ),
-          ),
-        Expanded(
-          child: TabBar(
-            controller: tabController,
-            tabs: const [
-              Tab(icon: Icon(Icons.grid_on_rounded), text: 'Posts'),
-              Tab(icon: Icon(Icons.chat_bubble_outline_rounded), text: 'Comments'),
-              Tab(icon: Icon(Icons.favorite_border_rounded), text: 'Likes'),
-            ],
-          ),
-        ),
+    return TabBar(
+      controller: tabController,
+      tabs: const [
+        Tab(icon: Icon(Icons.grid_on_rounded), text: 'Posts'),
+        Tab(icon: Icon(Icons.chat_bubble_outline_rounded), text: 'Comments'),
+        Tab(icon: Icon(Icons.favorite_border_rounded), text: 'Likes'),
       ],
     );
   }
 }
 
-/// Profile header with avatar, name, and bio
-class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({
-    required this.profile,
-  });
+/// Follow/Unfollow button for user profiles
+class _FollowButton extends ConsumerStatefulWidget {
+  const _FollowButton({required this.userId});
 
-  final UserProfile profile;
+  final String userId;
+
+  @override
+  ConsumerState<_FollowButton> createState() => _FollowButtonState();
+}
+
+class _FollowButtonState extends ConsumerState<_FollowButton> {
+  bool _isLoading = false;
+
+  Future<void> _toggleFollow() async {
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final repository = ref.read(followRepositoryProvider);
+      await repository.toggleFollow(widget.userId);
+      ref.invalidate(isFollowingProvider(widget.userId));
+      ref.invalidate(followerCountProvider(widget.userId));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update follow: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final isFollowingAsync = ref.watch(isFollowingProvider(widget.userId));
+
+    return isFollowingAsync.when(
+      data: (isFollowing) {
+        if (isFollowing) {
+          return FilledButton.icon(
+            onPressed: _isLoading ? null : _toggleFollow,
+            icon: _isLoading
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.check_rounded, size: 18),
+            label: const Text('Following'),
+          );
+        }
+        return OutlinedButton.icon(
+          onPressed: _isLoading ? null : _toggleFollow,
+          icon: _isLoading
+              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.person_add_outlined, size: 18),
+          label: const Text('Follow'),
+        );
+      },
+      loading: () => const SizedBox(
+        height: 40,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      error: (_, __) => OutlinedButton.icon(
+        onPressed: _toggleFollow,
+        icon: const Icon(Icons.person_add_outlined, size: 18),
+        label: const Text('Follow'),
+      ),
+    );
+  }
+}
+
+/// Profile header with avatar, name, bio, follower count, and action buttons
+class _ProfileHeader extends ConsumerWidget {
+  const _ProfileHeader({
+    required this.profile,
+    required this.isOwnProfile,
+    this.showMessageButton = false,
+    this.onMessageTap,
+    this.userId,
+    this.bioExpanded = false,
+    this.onBioToggle,
+  });
+
+  final UserProfile profile;
+  final bool isOwnProfile;
+  final bool showMessageButton;
+  final VoidCallback? onMessageTap;
+  final String? userId;
+  final bool bioExpanded;
+  final VoidCallback? onBioToggle;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
     final theme = Theme.of(context);
+    final followerCountAsync = ref.watch(followerCountProvider(profile.id));
+    final showActionButtons = !isOwnProfile && userId != null;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -283,17 +353,71 @@ class _ProfileHeader extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
+          // Follower count (only shown if user opted in)
+          followerCountAsync.when(
+            data: (count) {
+              if (count == null) return const SizedBox.shrink();
+              return Padding(
+                padding: EdgeInsets.only(top: tokens.spacingXs),
+                child: Text(
+                  '$count ${count == 1 ? 'follower' : 'followers'}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
           // Bio
           if (profile.bio != null && profile.bio!.isNotEmpty) ...[
             SizedBox(height: tokens.spacingSm),
-            Text(
-              profile.bio!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            GestureDetector(
+              onTap: onBioToggle,
+              child: Column(
+                children: [
+                  Text(
+                    profile.bio!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: bioExpanded ? null : 2,
+                    overflow: bioExpanded ? null : TextOverflow.ellipsis,
+                  ),
+                  SizedBox(height: tokens.spacingXs),
+                  Text(
+                    bioExpanded ? 'Show less' : 'More',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          // Action buttons (Follow / Message)
+          if (showActionButtons) ...[
+            SizedBox(height: tokens.spacingMd),
+            Row(
+              children: [
+                Expanded(
+                  child: _FollowButton(userId: userId!),
+                ),
+                if (showMessageButton) ...[
+                  SizedBox(width: tokens.spacingSm),
+                  Expanded(
+                    child: FilledButton.tonalIcon(
+                      onPressed: onMessageTap,
+                      icon: const Icon(Icons.message_outlined, size: 18),
+                      label: const Text('Message'),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ],

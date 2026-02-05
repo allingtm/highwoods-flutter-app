@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/message.dart';
 import '../../providers/connections_provider.dart';
+import '../../providers/presence_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
 
@@ -168,6 +169,8 @@ class MessagesListScreen extends ConsumerWidget {
     final lastMessage = conversation.lastMessage;
     final hasUnread = conversation.hasUnread;
 
+    final isOnline = ref.watch(isUserOnlineProvider(user.id));
+
     return ListTile(
       leading: Stack(
         children: [
@@ -186,6 +189,20 @@ class MessagesListScreen extends ConsumerWidget {
                   )
                 : null,
           ),
+          if (isOnline)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colorScheme.surface, width: 2),
+                ),
+              ),
+            ),
           if (hasUnread)
             Positioned(
               right: 0,

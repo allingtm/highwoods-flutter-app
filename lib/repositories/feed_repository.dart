@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:mime/mime.dart';
@@ -46,6 +47,7 @@ class FeedRepository {
     String? cursorId,
     String sort = 'new',
     int limit = 20,
+    bool followingOnly = false,
   }) async {
     try {
       final response = await _supabase.rpc(
@@ -56,6 +58,7 @@ class FeedRepository {
           'p_cursor_id': cursorId,
           'p_sort': sort,
           'p_limit': limit,
+          'p_following_only': followingOnly,
         },
       );
 
@@ -1224,99 +1227,96 @@ class FeedRepository {
   }
 
   // ============================================================
-  // Real-time Subscriptions
+  // Real-time Subscriptions (Broadcast)
   // ============================================================
 
-  /// Subscribes to new posts in the feed
+  /// Subscribes to new posts in the feed via Broadcast
   RealtimeChannel subscribeToNewPosts({
-    required void Function(Post post) onNewPost,
+    required void Function(String postId, String? authorId) onNewPost,
   }) {
     return _supabase
-        .channel('public:posts')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'posts',
-          callback: (payload) async {
-            final postId = payload.newRecord['id'] as String;
-            final post = await getPostById(postId);
-            if (post != null) {
-              onNewPost(post);
+        .channel(
+          'feed:global:posts',
+          opts: const RealtimeChannelConfig(private: true),
+        )
+        .onBroadcast(
+          event: 'INSERT',
+          callback: (payload) {
+            try {
+              final postId = payload['id'] as String;
+              final authorId = payload['author_id'] as String?;
+              onNewPost(postId, authorId);
+            } catch (e) {
+              debugPrint('Error parsing new post broadcast: $e');
             }
           },
         )
         .subscribe();
   }
 
-  /// Subscribes to comments on a specific post
+  /// Subscribes to comments on a specific post via Broadcast
   RealtimeChannel subscribeToComments({
     required String postId,
-    required void Function(PostComment comment) onNewComment,
+    required void Function(String commentId) onNewComment,
   }) {
     return _supabase
-        .channel('public:post_comments:$postId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'post_comments',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'post_id',
-            value: postId,
-          ),
-          callback: (payload) async {
-            final commentId = payload.newRecord['id'] as String;
-            // Fetch the full comment with profile data
-            final response = await _supabase
-                .from('post_comments')
-                .select('''
-                  *,
-                  profiles:author_id (
-                    username,
-                    first_name,
-                    last_name,
-                    avatar_url
-                  )
-                ''')
-                .eq('id', commentId)
-                .single();
-
-            final profile = response['profiles'] as Map<String, dynamic>?;
-            final data = Map<String, dynamic>.from(response);
-            data['user_id'] = data['author_id'];
-            data['content'] = data['body'];
-
-            if (profile != null) {
-              final username = profile['username'] as String?;
-              final firstName = profile['first_name'] as String?;
-              final lastName = profile['last_name'] as String?;
-              final fullName = [firstName, lastName]
-                  .where((s) => s != null && s.isNotEmpty)
-                  .join(' ');
-              data['author_name'] = fullName.isNotEmpty ? fullName : username;
-              data['author_username'] = username;
-              data['author_avatar_url'] = profile['avatar_url'];
+        .channel(
+          'feed:$postId:comments',
+          opts: const RealtimeChannelConfig(private: true),
+        )
+        .onBroadcast(
+          event: 'INSERT',
+          callback: (payload) {
+            try {
+              final commentId = payload['id'] as String;
+              onNewComment(commentId);
+            } catch (e) {
+              debugPrint('Error parsing comment broadcast: $e');
             }
-
-            final comment = PostComment.fromJson(data);
-            onNewComment(comment);
           },
         )
         .subscribe();
   }
 
-  /// Subscribes to active alerts (for urgent banner)
+  /// Subscribes to active alerts (for urgent banner) via Broadcast
   RealtimeChannel subscribeToAlerts({
     required void Function() onAlertChange,
   }) {
     return _supabase
-        .channel('public:alert_details')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'alert_details',
+        .channel(
+          'feed:global:alerts',
+          opts: const RealtimeChannelConfig(private: true),
+        )
+        .onBroadcast(
+          event: '*',
           callback: (_) {
             onAlertChange();
+          },
+        )
+        .subscribe();
+  }
+
+  /// Subscribes to reaction changes on all posts via Broadcast
+  RealtimeChannel subscribeToReactions({
+    required void Function(String postId, String userId, int reactionCount)
+        onReactionChange,
+  }) {
+    return _supabase
+        .channel(
+          'feed:global:reactions',
+          opts: const RealtimeChannelConfig(private: true),
+        )
+        .onBroadcast(
+          event: '*',
+          callback: (payload) {
+            try {
+              final postId = payload['post_id'] as String;
+              final userId = payload['user_id'] as String;
+              final reactionCount = payload['reaction_count'] as int;
+              onReactionChange(postId, userId, reactionCount);
+            } catch (e) {
+              debugPrint('Error parsing reaction broadcast: $e');
+            }
           },
         )
         .subscribe();

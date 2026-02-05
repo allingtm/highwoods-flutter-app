@@ -15,7 +15,7 @@ class WelcomeScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final welcomeBackground = context.colors.primaryLight;
+    final welcomeBackground = context.colors.background;
 
     return Scaffold(
       backgroundColor: welcomeBackground,
@@ -101,7 +101,7 @@ class WelcomeScreen extends StatelessWidget {
                 back: Container(
                   padding: EdgeInsets.all(tokens.spacingSm),
                   decoration: BoxDecoration(
-                    color: colorScheme.outline.withValues(alpha: 0.3),
+                    color: colorScheme.outline.withValues(alpha: 0.4),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -113,7 +113,7 @@ class WelcomeScreen extends StatelessWidget {
                   size: const Size(10, 10),
                   activeSize: const Size(22, 10),
                   activeColor: colorScheme.primary,
-                  color: colorScheme.outline.withValues(alpha: 0.3),
+                  color: colorScheme.outline.withValues(alpha: 0.4),
                   activeShape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),

@@ -139,6 +139,7 @@ class AuthRepository {
     String? avatarUrl,
     String? bio,
     bool? allowOpenMessaging,
+    bool? showFollowerCount,
   }) async {
     try {
       final updates = <String, dynamic>{};
@@ -148,6 +149,7 @@ class AuthRepository {
       if (avatarUrl != null) updates['avatar_url'] = avatarUrl;
       if (bio != null) updates['bio'] = bio;
       if (allowOpenMessaging != null) updates['allow_open_messaging'] = allowOpenMessaging;
+      if (showFollowerCount != null) updates['show_follower_count'] = showFollowerCount;
 
       if (updates.isNotEmpty) {
         await _supabase

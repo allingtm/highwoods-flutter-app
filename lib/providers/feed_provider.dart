@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/post_category.dart';
 import '../models/post_type.dart';
 import '../models/feed/feed_models.dart';
@@ -82,7 +83,7 @@ final selectedCategoryProvider = StateProvider<PostCategory?>((ref) => null);
 // ============================================================
 
 /// Feed sort order
-enum FeedSort { newest, active }
+enum FeedSort { newest, active, following }
 
 const String _feedSortKey = 'feed_sort';
 
@@ -156,8 +157,11 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
       final posts = await _repository.getFeedPosts(
         category: _category,
         sort: _sort == FeedSort.active ? 'active' : 'new',
+        followingOnly: _sort == FeedSort.following,
         limit: 20,
       );
+
+      if (!mounted) return;
 
       _hasMore = posts.length >= 20;
       if (posts.isNotEmpty) {
@@ -169,6 +173,7 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
 
       state = AsyncValue.data(posts);
     } catch (error, stackTrace) {
+      if (!mounted) return;
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -193,10 +198,13 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
       final newPosts = await _repository.getFeedPosts(
         category: _category,
         sort: _sort == FeedSort.active ? 'active' : 'new',
+        followingOnly: _sort == FeedSort.following,
         cursor: _cursor,
         cursorId: _cursorId,
         limit: 20,
       );
+
+      if (!mounted) return;
 
       _hasMore = newPosts.length >= 20;
       if (newPosts.isNotEmpty) {
@@ -208,7 +216,7 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
 
       state = AsyncValue.data([...currentPosts, ...newPosts]);
     } catch (error, stackTrace) {
-      // Keep existing posts on error, just log it
+      if (!mounted) return;
       state = AsyncValue.error(error, stackTrace);
     } finally {
       _isLoadingMore = false;
@@ -810,4 +818,155 @@ final searchResultsProvider = FutureProvider<List<Post>>((ref) async {
 final eventAttendeesProvider = FutureProvider.family<List<EventRsvp>, String>((ref, postId) async {
   final repository = ref.watch(feedRepositoryProvider);
   return repository.getEventAttendees(postId);
+});
+
+// ============================================================
+// Feed Realtime Manager
+// ============================================================
+
+/// Manages real-time subscriptions for feed updates (new posts, alerts, comments)
+class FeedRealtimeManager {
+  FeedRealtimeManager(this._ref, this._repository);
+
+  final Ref _ref;
+  final FeedRepository _repository;
+  RealtimeChannel? _postsChannel;
+  RealtimeChannel? _alertsChannel;
+  RealtimeChannel? _commentsChannel;
+  RealtimeChannel? _reactionsChannel;
+  bool _isSubscribed = false;
+
+  int _newPostsCount = 0;
+  int get newPostsCount => _newPostsCount;
+
+  /// Listeners notified when new posts count changes
+  final List<VoidCallback> _listeners = [];
+
+  void addListener(VoidCallback listener) => _listeners.add(listener);
+  void removeListener(VoidCallback listener) => _listeners.remove(listener);
+
+  void _notifyListeners() {
+    for (final listener in _listeners) {
+      listener();
+    }
+  }
+
+  void resetNewPostsCount() {
+    _newPostsCount = 0;
+    _notifyListeners();
+  }
+
+  void subscribeToFeed() {
+    if (_postsChannel != null) {
+      _repository.unsubscribe(_postsChannel!);
+      _postsChannel = null;
+    }
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    _postsChannel = _repository.subscribeToNewPosts(
+      onNewPost: (postId, authorId) {
+        // Don't count own posts
+        if (authorId == currentUserId) return;
+        _newPostsCount++;
+        _notifyListeners();
+      },
+    );
+  }
+
+  void subscribeToAlerts() {
+    if (_alertsChannel != null) {
+      _repository.unsubscribe(_alertsChannel!);
+      _alertsChannel = null;
+    }
+    _alertsChannel = _repository.subscribeToAlerts(
+      onAlertChange: () {
+        _ref.invalidate(activeAlertsProvider);
+      },
+    );
+  }
+
+  void subscribeToReactions() {
+    if (_reactionsChannel != null) {
+      _repository.unsubscribe(_reactionsChannel!);
+      _reactionsChannel = null;
+    }
+    final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+    _reactionsChannel = _repository.subscribeToReactions(
+      onReactionChange: (postId, userId, reactionCount) {
+        // Skip own reactions — sender already did optimistic update
+        if (userId == currentUserId) return;
+
+        // Only update if the post is in our cache
+        final cachedPost = _ref.read(postCacheProvider)[postId];
+        if (cachedPost == null) return;
+
+        final updatedPost = cachedPost.copyWith(reactionCount: reactionCount);
+        _ref.read(postCacheProvider.notifier).updatePost(updatedPost);
+        _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
+      },
+    );
+  }
+
+  void subscribeToComments(String postId) {
+    unsubscribeFromComments();
+    _commentsChannel = _repository.subscribeToComments(
+      postId: postId,
+      onNewComment: (commentId) {
+        _ref.invalidate(postCommentsProvider(postId));
+        // Update comment count in cache
+        final cachedPost = _ref.read(postCacheProvider)[postId];
+        if (cachedPost != null) {
+          final updatedPost = cachedPost.copyWith(
+            commentCount: cachedPost.commentCount + 1,
+            lastActivityAt: DateTime.now(),
+          );
+          _ref.read(postCacheProvider.notifier).updatePost(updatedPost);
+          _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
+        }
+      },
+    );
+  }
+
+  void unsubscribeFromComments() {
+    if (_commentsChannel != null) {
+      _repository.unsubscribe(_commentsChannel!);
+      _commentsChannel = null;
+    }
+  }
+
+  void subscribeAll() {
+    if (_isSubscribed) return;
+    _isSubscribed = true;
+    subscribeToFeed();
+    subscribeToAlerts();
+    subscribeToReactions();
+  }
+
+  Future<void> dispose() async {
+    _isSubscribed = false;
+    if (_postsChannel != null) {
+      await _repository.unsubscribe(_postsChannel!);
+      _postsChannel = null;
+    }
+    if (_alertsChannel != null) {
+      await _repository.unsubscribe(_alertsChannel!);
+      _alertsChannel = null;
+    }
+    if (_reactionsChannel != null) {
+      await _repository.unsubscribe(_reactionsChannel!);
+      _reactionsChannel = null;
+    }
+    unsubscribeFromComments();
+    _listeners.clear();
+  }
+}
+
+final feedRealtimeProvider = Provider<FeedRealtimeManager>((ref) {
+  final repository = ref.watch(feedRepositoryProvider);
+  final manager = FeedRealtimeManager(ref, repository);
+
+  ref.onDispose(() {
+    manager.dispose();
+  });
+
+  return manager;
 });

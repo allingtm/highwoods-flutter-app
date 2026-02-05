@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../providers/connections_provider.dart';
+import '../providers/feed_provider.dart';
+import '../providers/presence_provider.dart';
+import '../providers/realtime_status_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../services/notification_navigation_service.dart';
 import '../theme/app_theme_tokens.dart';
@@ -33,6 +37,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     super.initState();
     _selectedIndex = widget.initialTab;
     WidgetsBinding.instance.addObserver(this);
+
+    // Initialize all realtime subscriptions on app load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(connectionsRealtimeProvider).subscribeAll();
+      ref.read(feedRealtimeProvider).subscribeAll();
+      ref.read(presenceProvider).startTracking();
+    });
   }
 
   @override
@@ -66,6 +77,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final colorScheme = Theme.of(context).colorScheme;
 
+    final realtimeStatus = ref.watch(realtimeStatusProvider);
+
     return Scaffold(
       key: _scaffoldKey,
       drawer: _buildDrawer(context, tokens, colorScheme),
@@ -87,6 +100,43 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ConnectionsScreen(onMenuTap: _openDrawer),
             ],
           ),
+          // Connection lost banner
+          if (realtimeStatus == RealtimeStatus.disconnected)
+            Positioned(
+              top: MediaQuery.of(context).padding.top,
+              left: 0,
+              right: 0,
+              child: Material(
+                color: colorScheme.errorContainer,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacingLg,
+                    vertical: tokens.spacingSm,
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: colorScheme.onErrorContainer,
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacingSm),
+                      Text(
+                        'Connection lost. Reconnecting...',
+                        style: TextStyle(
+                          color: colorScheme.onErrorContainer,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           Positioned(
             left: 0,
             right: 0,

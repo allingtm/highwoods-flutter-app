@@ -35,6 +35,7 @@ class AppTheme {
         onErrorContainer: palette.errorDark,
         surface: palette.surface,
         onSurface: palette.textPrimary,
+        onSurfaceVariant: palette.textSecondary,
         surfaceContainerHighest: palette.surfaceVariant,
         outline: palette.border,
         outlineVariant: palette.borderLight,

@@ -49,10 +49,16 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
         ref.invalidate(postCommentsProvider(widget.postId));
       });
     }
+
+    // Subscribe to live comment updates
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(feedRealtimeProvider).subscribeToComments(widget.postId);
+    });
   }
 
   @override
   void dispose() {
+    ref.read(feedRealtimeProvider).unsubscribeFromComments();
     _commentController.dispose();
     _commentFocusNode.dispose();
     super.dispose();

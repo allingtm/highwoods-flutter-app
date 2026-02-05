@@ -288,38 +288,77 @@ class SettingsScreen extends ConsumerWidget {
       child: userProfile.when(
         data: (profile) {
           final allowOpenMessaging = profile?.allowOpenMessaging ?? true;
-          return SwitchListTile(
-            secondary: Icon(
-              Icons.message_outlined,
-              color: colorScheme.primary,
-            ),
-            title: const Text(
-              'Open Messaging',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-            subtitle: Text(
-              allowOpenMessaging
-                  ? 'Anyone can message you'
-                  : 'Only contacts can message you (except for post inquiries)',
-              style: TextStyle(
-                color: context.colors.textSecondary,
-                fontSize: 12,
+          final showFollowerCount = profile?.showFollowerCount ?? false;
+          return Column(
+            children: [
+              SwitchListTile(
+                secondary: Icon(
+                  Icons.message_outlined,
+                  color: colorScheme.primary,
+                ),
+                title: const Text(
+                  'Open Messaging',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                subtitle: Text(
+                  allowOpenMessaging
+                      ? 'Anyone can message you'
+                      : 'Only contacts can message you (except for post inquiries)',
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                value: allowOpenMessaging,
+                onChanged: (value) async {
+                  try {
+                    await ref
+                        .read(userProfileNotifierProvider.notifier)
+                        .updateMessagingPrivacy(value);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to update setting: $e')),
+                      );
+                    }
+                  }
+                },
               ),
-            ),
-            value: allowOpenMessaging,
-            onChanged: (value) async {
-              try {
-                await ref
-                    .read(userProfileNotifierProvider.notifier)
-                    .updateMessagingPrivacy(value);
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to update setting: $e')),
-                  );
-                }
-              }
-            },
+              const Divider(height: 1),
+              SwitchListTile(
+                secondary: Icon(
+                  Icons.visibility_outlined,
+                  color: colorScheme.primary,
+                ),
+                title: const Text(
+                  'Show Follower Count',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+                subtitle: Text(
+                  showFollowerCount
+                      ? 'Your follower count is visible on your profile'
+                      : 'Your follower count is hidden',
+                  style: TextStyle(
+                    color: context.colors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+                value: showFollowerCount,
+                onChanged: (value) async {
+                  try {
+                    await ref
+                        .read(userProfileNotifierProvider.notifier)
+                        .updateShowFollowerCount(value);
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to update setting: $e')),
+                      );
+                    }
+                  }
+                },
+              ),
+            ],
           );
         },
         loading: () => const ListTile(

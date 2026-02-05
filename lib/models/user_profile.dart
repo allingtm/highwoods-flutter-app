@@ -8,6 +8,8 @@ class UserProfile {
   final String? bio;
   final String role;
   final bool allowOpenMessaging;
+  final bool showFollowerCount;
+  final int followerCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -21,6 +23,8 @@ class UserProfile {
     this.bio,
     this.role = 'user',
     this.allowOpenMessaging = true,
+    this.showFollowerCount = false,
+    this.followerCount = 0,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -36,6 +40,8 @@ class UserProfile {
       bio: json['bio'] as String?,
       role: json['role'] as String? ?? 'user',
       allowOpenMessaging: json['allow_open_messaging'] as bool? ?? true,
+      showFollowerCount: json['show_follower_count'] as bool? ?? false,
+      followerCount: json['follower_count'] as int? ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -52,6 +58,8 @@ class UserProfile {
       'bio': bio,
       'role': role,
       'allow_open_messaging': allowOpenMessaging,
+      'show_follower_count': showFollowerCount,
+      'follower_count': followerCount,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -67,6 +75,8 @@ class UserProfile {
     String? bio,
     String? role,
     bool? allowOpenMessaging,
+    bool? showFollowerCount,
+    int? followerCount,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -80,6 +90,8 @@ class UserProfile {
       bio: bio ?? this.bio,
       role: role ?? this.role,
       allowOpenMessaging: allowOpenMessaging ?? this.allowOpenMessaging,
+      showFollowerCount: showFollowerCount ?? this.showFollowerCount,
+      followerCount: followerCount ?? this.followerCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -31,13 +31,25 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final manager = ref.read(feedRealtimeProvider);
+      manager.addListener(_onNewPostsChanged);
+    });
   }
 
   @override
   void dispose() {
+    ref.read(feedRealtimeProvider).removeListener(_onNewPostsChanged);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onNewPostsChanged() {
+    if (!mounted) return;
+    setState(() {
+      _newPostsCount = ref.read(feedRealtimeProvider).newPostsCount;
+    });
   }
 
   void _onScroll() {
@@ -76,9 +88,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOut,
     );
-    setState(() {
-      _newPostsCount = 0;
-    });
+    ref.read(feedRealtimeProvider).resetNewPostsCount();
+    ref.read(feedPostsNotifierProvider.notifier).refresh();
   }
 
   Widget _buildAnimatedFab(Widget fab) {
@@ -195,6 +206,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                   return SliverFillRemaining(
                     child: _EmptyState(
                       category: selectedCategory,
+                      isFollowingMode: feedSort == FeedSort.following,
                       onCreatePost: isAuthenticated
                           ? () => context.push(
                               '/create-post${selectedCategory != null ? '?category=${selectedCategory.dbValue}' : ''}')
@@ -278,15 +290,35 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState({
     this.category,
     this.onCreatePost,
+    this.isFollowingMode = false,
   });
 
   final PostCategory? category;
   final VoidCallback? onCreatePost;
+  final bool isFollowingMode;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final theme = Theme.of(context);
+
+    final String title;
+    final String subtitle;
+    final IconData icon;
+
+    if (isFollowingMode) {
+      icon = Icons.people_outline_rounded;
+      title = 'No posts from people you follow';
+      subtitle = 'Follow people to see their posts here.';
+    } else if (category != null) {
+      icon = category!.icon;
+      title = 'No ${category!.displayName.toLowerCase()} posts yet';
+      subtitle = 'Be the first to share something with the community!';
+    } else {
+      icon = Icons.forum_outlined;
+      title = 'No posts yet';
+      subtitle = 'Be the first to share something with the community!';
+    }
 
     return Center(
       child: Padding(
@@ -295,26 +327,24 @@ class _EmptyState extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              category?.icon ?? Icons.forum_outlined,
+              icon,
               size: tokens.iconXl,
               color: theme.colorScheme.primary.withValues(alpha: 0.5),
             ),
             SizedBox(height: tokens.spacingLg),
             Text(
-              category != null
-                  ? 'No ${category!.displayName.toLowerCase()} posts yet'
-                  : 'No posts yet',
+              title,
               style: theme.textTheme.titleMedium,
             ),
             SizedBox(height: tokens.spacingSm),
             Text(
-              'Be the first to share something with the community!',
+              subtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
-            if (onCreatePost != null) ...[
+            if (onCreatePost != null && !isFollowingMode) ...[
               SizedBox(height: tokens.spacingXl),
               FilledButton.icon(
                 onPressed: onCreatePost,
@@ -383,7 +413,7 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-/// Sort toggle between New and Active
+/// Sort toggle between New, Active, and Following
 class _SortToggle extends StatelessWidget {
   const _SortToggle({
     required this.sort,
@@ -412,6 +442,13 @@ class _SortToggle extends StatelessWidget {
           icon: Icons.local_fire_department_rounded,
           isSelected: sort == FeedSort.active,
           onTap: () => onChanged(FeedSort.active),
+        ),
+        SizedBox(width: tokens.spacingSm),
+        _SortChip(
+          label: 'Following',
+          icon: Icons.people_rounded,
+          isSelected: sort == FeedSort.following,
+          onTap: () => onChanged(FeedSort.following),
         ),
         const Spacer(),
         Icon(

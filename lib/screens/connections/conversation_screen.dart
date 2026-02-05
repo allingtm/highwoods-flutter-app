@@ -8,6 +8,7 @@ import '../../models/message_report.dart';
 import '../../models/user_profile.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/connections_provider.dart';
+import '../../providers/presence_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
 
@@ -30,7 +31,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final _scrollController = ScrollController();
   bool _isSending = false;
   UserProfile? _otherUser;
-  RealtimeChannel? _channel;
 
   @override
   void initState() {
@@ -48,14 +48,20 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
     _loadOtherUser();
     _markAsRead();
-    _subscribeToMessages();
+
+    // Tell the global realtime manager which conversation is active
+    // so it can refresh messagesProvider when new messages arrive
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(connectionsRealtimeProvider).setActiveConversation(widget.otherUserId);
+    });
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    _unsubscribe();
+    // Clear the active conversation so the global manager stops refreshing this conversation
+    ref.read(connectionsRealtimeProvider).setActiveConversation(null);
     super.dispose();
   }
 
@@ -94,24 +100,27 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     await markMessagesAsRead(ref, widget.otherUserId);
   }
 
-  void _subscribeToMessages() {
-    final repository = ref.read(connectionsRepositoryProvider);
-    _channel = repository.subscribeToMessages(
-      onNewMessage: (message) {
-        // Refresh messages if it's from this conversation
-        if (message.senderId == widget.otherUserId) {
-          ref.invalidate(messagesProvider(widget.otherUserId));
-          _markAsRead();
-        }
-      },
+  Widget _buildOnlineStatus(BuildContext context, ColorScheme colorScheme) {
+    final isOnline = ref.watch(isUserOnlineProvider(widget.otherUserId));
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: isOnline ? Colors.green : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          isOnline ? 'Online' : 'Offline',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: isOnline ? Colors.green : colorScheme.onSurfaceVariant,
+              ),
+        ),
+      ],
     );
-  }
-
-  Future<void> _unsubscribe() async {
-    if (_channel != null) {
-      final repository = ref.read(connectionsRepositoryProvider);
-      await repository.unsubscribe(_channel!);
-    }
   }
 
   @override
@@ -154,13 +163,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                     _otherUser?.fullName ?? 'Chat',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  if (_otherUser?.username != null)
-                    Text(
-                      '@${_otherUser!.username}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                    ),
+                  _buildOnlineStatus(context, colorScheme),
                 ],
               ),
             ),
@@ -668,6 +671,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       );
 
       _messageController.clear();
+      // Refresh to show the sent message (the DB write is already complete
+      // at this point since sendMessage awaited the response)
       ref.invalidate(messagesProvider(widget.otherUserId));
 
       // Scroll to bottom
