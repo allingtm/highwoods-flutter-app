@@ -101,33 +101,36 @@ class _ActionButton extends StatelessWidget {
         ? (activeColor ?? theme.colorScheme.primary)
         : theme.colorScheme.onSurfaceVariant;
 
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(tokens.radiusMd),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacingSm,
-          vertical: tokens.spacingXs,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: compact ? 18 : 20,
-              color: color,
-            ),
-            if (label != null) ...[
-              SizedBox(width: tokens.spacingXs),
-              Text(
-                label!,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: color,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                ),
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacingSm,
+            vertical: tokens.spacingXs,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: compact ? 18 : 20,
+                color: color,
               ),
+              if (label != null) ...[
+                SizedBox(width: tokens.spacingXs),
+                Text(
+                  label!,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: color,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
