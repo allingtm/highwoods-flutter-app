@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -29,6 +31,39 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
   void initState() {
     super.initState();
     _handleDeepLink();
+  }
+
+  /// Waits for Supabase auth state to emit signedIn event (or times out)
+  Future<User?> _waitForAuthState() async {
+    final completer = Completer<User?>();
+    StreamSubscription<AuthState>? subscription;
+
+    subscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+      if (state.event == AuthChangeEvent.signedIn &&
+          state.session?.user != null) {
+        if (!completer.isCompleted) {
+          completer.complete(state.session?.user);
+        }
+        subscription?.cancel();
+      }
+    });
+
+    // Check if user is already set (session may have propagated already)
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    if (currentUser != null && !completer.isCompleted) {
+      completer.complete(currentUser);
+      subscription.cancel();
+      return currentUser;
+    }
+
+    // Wait with timeout to prevent infinite hang
+    try {
+      return await completer.future.timeout(const Duration(seconds: 5));
+    } on TimeoutException {
+      subscription.cancel();
+      return null;
+    }
   }
 
   Future<void> _handleDeepLink() async {
@@ -77,11 +112,8 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
 
       if (!mounted) return;
 
-      // Wait a moment for the auth state to propagate
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // Verify the user is actually logged in
-      final user = Supabase.instance.client.auth.currentUser;
+      // Wait for auth state to actually propagate (not just arbitrary delay)
+      final user = await _waitForAuthState();
 
       if (user != null) {
         // Check if profile exists
