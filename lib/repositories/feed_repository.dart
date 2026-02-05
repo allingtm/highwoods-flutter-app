@@ -39,10 +39,12 @@ class FeedRepository {
   // ============================================================
 
   /// Gets paginated feed posts using cursor-based pagination
-  /// Returns posts older than [cursor] (created_at timestamp)
+  /// [sort] can be 'new' (chronological) or 'active' (by last comment activity)
   Future<List<Post>> getFeedPosts({
     PostCategory? category,
     String? cursor,
+    String? cursorId,
+    String sort = 'new',
     int limit = 20,
   }) async {
     try {
@@ -51,6 +53,8 @@ class FeedRepository {
         params: {
           'p_category': category?.dbValue,
           'p_cursor': cursor,
+          'p_cursor_id': cursorId,
+          'p_sort': sort,
           'p_limit': limit,
         },
       );

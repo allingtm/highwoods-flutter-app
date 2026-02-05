@@ -29,6 +29,7 @@ class Post {
   final int commentCount;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? lastActivityAt;
 
   // Author info (joined from profiles)
   final String? authorName;
@@ -70,6 +71,7 @@ class Post {
     this.commentCount = 0,
     required this.createdAt,
     required this.updatedAt,
+    this.lastActivityAt,
     this.authorName,
     this.authorUsername,
     this.authorAvatarUrl,
@@ -118,6 +120,9 @@ class Post {
       commentCount: json['comment_count'] as int? ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] ?? json['created_at'] as String),
+      lastActivityAt: json['last_activity_at'] != null
+          ? DateTime.parse(json['last_activity_at'] as String)
+          : null,
       authorName: authorName,
       authorUsername: username,
       authorAvatarUrl: json['author_avatar_url'] as String?,
@@ -177,6 +182,9 @@ class Post {
       commentCount: json['comment_count'] as int? ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      lastActivityAt: json['last_activity_at'] != null
+          ? DateTime.parse(json['last_activity_at'] as String)
+          : null,
       authorName: json['author_name'] as String?,
       authorUsername: json['author_username'] as String?,
       authorAvatarUrl: json['author_avatar_url'] as String?,
@@ -253,6 +261,7 @@ class Post {
     int? commentCount,
     DateTime? createdAt,
     DateTime? updatedAt,
+    DateTime? lastActivityAt,
     String? authorName,
     String? authorUsername,
     String? authorAvatarUrl,
@@ -285,6 +294,7 @@ class Post {
       commentCount: commentCount ?? this.commentCount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      lastActivityAt: lastActivityAt ?? this.lastActivityAt,
       authorName: authorName ?? this.authorName,
       authorUsername: authorUsername ?? this.authorUsername,
       authorAvatarUrl: authorAvatarUrl ?? this.authorAvatarUrl,

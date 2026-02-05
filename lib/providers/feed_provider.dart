@@ -76,12 +76,22 @@ final cachedPostProvider = Provider.family<Post?, String>((ref, postId) {
 final selectedCategoryProvider = StateProvider<PostCategory?>((ref) => null);
 
 // ============================================================
+// Sort State
+// ============================================================
+
+/// Feed sort order
+enum FeedSort { newest, active }
+
+/// Currently selected sort order
+final feedSortProvider = StateProvider<FeedSort>((ref) => FeedSort.newest);
+
+// ============================================================
 // Feed Posts Provider
 // ============================================================
 
-/// Paginated feed posts with category filtering
+/// Paginated feed posts with category filtering and sorting
 class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
-  FeedPostsNotifier(this._ref, this._repository, this._category)
+  FeedPostsNotifier(this._ref, this._repository, this._category, this._sort)
       : super(const AsyncValue.loading()) {
     loadInitial();
   }
@@ -89,7 +99,9 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
   final Ref _ref;
   final FeedRepository _repository;
   final PostCategory? _category;
+  final FeedSort _sort;
   String? _cursor;
+  String? _cursorId;
   bool _hasMore = true;
   bool _isLoadingMore = false;
 
@@ -99,17 +111,19 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
   Future<void> loadInitial() async {
     state = const AsyncValue.loading();
     _cursor = null;
+    _cursorId = null;
     _hasMore = true;
 
     try {
       final posts = await _repository.getFeedPosts(
         category: _category,
+        sort: _sort == FeedSort.active ? 'active' : 'new',
         limit: 20,
       );
 
       _hasMore = posts.length >= 20;
       if (posts.isNotEmpty) {
-        _cursor = posts.last.createdAt.toIso8601String();
+        _setCursor(posts.last);
       }
 
       // Cache all posts for shared access across views
@@ -118,6 +132,16 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
       state = AsyncValue.data(posts);
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  void _setCursor(Post post) {
+    if (_sort == FeedSort.active) {
+      _cursor = (post.lastActivityAt ?? post.createdAt).toIso8601String();
+      _cursorId = post.id;
+    } else {
+      _cursor = post.createdAt.toIso8601String();
+      _cursorId = null;
     }
   }
 
@@ -130,13 +154,15 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
     try {
       final newPosts = await _repository.getFeedPosts(
         category: _category,
+        sort: _sort == FeedSort.active ? 'active' : 'new',
         cursor: _cursor,
+        cursorId: _cursorId,
         limit: 20,
       );
 
       _hasMore = newPosts.length >= 20;
       if (newPosts.isNotEmpty) {
-        _cursor = newPosts.last.createdAt.toIso8601String();
+        _setCursor(newPosts.last);
       }
 
       // Cache new posts
@@ -190,7 +216,8 @@ final feedPostsNotifierProvider =
     StateNotifierProvider<FeedPostsNotifier, AsyncValue<List<Post>>>((ref) {
   final repository = ref.watch(feedRepositoryProvider);
   final category = ref.watch(selectedCategoryProvider);
-  return FeedPostsNotifier(ref, repository, category);
+  final sort = ref.watch(feedSortProvider);
+  return FeedPostsNotifier(ref, repository, category, sort);
 });
 
 // ============================================================
@@ -412,6 +439,17 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
       // Invalidate comments list for this post
       _ref.invalidate(postCommentsProvider(postId));
 
+      // Update the post's comment count and last activity in cache
+      final cachedPost = _ref.read(postCacheProvider)[postId];
+      if (cachedPost != null) {
+        final updatedPost = cachedPost.copyWith(
+          commentCount: cachedPost.commentCount + 1,
+          lastActivityAt: DateTime.now(),
+        );
+        _ref.read(postCacheProvider.notifier).updatePost(updatedPost);
+        _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
+      }
+
       return comment;
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
@@ -429,6 +467,16 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       // Invalidate comments list for this post
       _ref.invalidate(postCommentsProvider(postId));
+
+      // Update the post's comment count in cache
+      final cachedPost = _ref.read(postCacheProvider)[postId];
+      if (cachedPost != null) {
+        final updatedPost = cachedPost.copyWith(
+          commentCount: (cachedPost.commentCount - 1).clamp(0, cachedPost.commentCount),
+        );
+        _ref.read(postCacheProvider.notifier).updatePost(updatedPost);
+        _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
+      }
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
       rethrow;

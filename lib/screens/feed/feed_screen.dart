@@ -109,6 +109,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final selectedCategory = ref.watch(selectedCategoryProvider);
+    final feedSort = ref.watch(feedSortProvider);
     final postsAsync = ref.watch(feedPostsNotifierProvider);
     final alertsAsync = ref.watch(activeAlertsProvider);
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
@@ -164,13 +165,25 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
 
-            // Filter pills
+            // Sort toggle + Filter pills
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: tokens.spacingMd),
-                child: FilterPills(
-                  selectedCategory: selectedCategory,
-                  onCategorySelected: _onCategorySelected,
+                child: Column(
+                  children: [
+                    FilterPills(
+                      selectedCategory: selectedCategory,
+                      onCategorySelected: _onCategorySelected,
+                    ),
+                    SizedBox(height: tokens.spacingSm),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: tokens.spacingLg),
+                      child: _SortToggle(
+                        sort: feedSort,
+                        onChanged: (sort) => ref.read(feedSortProvider.notifier).state = sort,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -364,6 +377,112 @@ class _ErrorState extends StatelessWidget {
               label: const Text('Try Again'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sort toggle between New and Active
+class _SortToggle extends StatelessWidget {
+  const _SortToggle({
+    required this.sort,
+    required this.onChanged,
+  });
+
+  final FeedSort sort;
+  final ValueChanged<FeedSort> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = context.tokens;
+
+    return Row(
+      children: [
+        _SortChip(
+          label: 'New',
+          icon: Icons.schedule_rounded,
+          isSelected: sort == FeedSort.newest,
+          onTap: () => onChanged(FeedSort.newest),
+        ),
+        SizedBox(width: tokens.spacingSm),
+        _SortChip(
+          label: 'Active',
+          icon: Icons.local_fire_department_rounded,
+          isSelected: sort == FeedSort.active,
+          onTap: () => onChanged(FeedSort.active),
+        ),
+        const Spacer(),
+        Icon(
+          Icons.sort_rounded,
+          size: 18,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ],
+    );
+  }
+}
+
+class _SortChip extends StatelessWidget {
+  const _SortChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final theme = Theme.of(context);
+
+    return Material(
+      color: isSelected
+          ? theme.colorScheme.primary.withValues(alpha: 0.15)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(tokens.radiusXl),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(tokens.radiusXl),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacingMd,
+            vertical: tokens.spacingXs,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(tokens.radiusXl),
+            border: isSelected
+                ? Border.all(color: theme.colorScheme.primary, width: 1.5)
+                : Border.all(color: theme.colorScheme.outlineVariant, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              SizedBox(width: tokens.spacingXs),
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
