@@ -67,11 +67,12 @@ class MediaPickerWidget extends StatefulWidget {
 
 class _MediaPickerWidgetState extends State<MediaPickerWidget> {
   final ImagePicker _picker = ImagePicker();
+  MediaType _selectedMediaType = MediaType.photos;
 
   MediaType get _currentMediaType {
     if (widget.video != null) return MediaType.video;
     if (widget.images.isNotEmpty) return MediaType.photos;
-    return MediaType.photos; // default
+    return _selectedMediaType;
   }
 
   bool get _hasMedia => widget.images.isNotEmpty || widget.video != null;
@@ -103,6 +104,7 @@ class _MediaPickerWidgetState extends State<MediaPickerWidget> {
 
   void _removeVideo() {
     HapticFeedback.lightImpact();
+    setState(() => _selectedMediaType = MediaType.photos);
     widget.onVideoChanged(null);
   }
 
@@ -157,12 +159,14 @@ class _MediaPickerWidgetState extends State<MediaPickerWidget> {
   }
 
   void _switchToPhotos() {
+    setState(() => _selectedMediaType = MediaType.photos);
     if (widget.video != null) {
       widget.onVideoChanged(null);
     }
   }
 
   void _switchToVideo() {
+    setState(() => _selectedMediaType = MediaType.video);
     if (widget.images.isNotEmpty) {
       widget.onImagesChanged([]);
     }

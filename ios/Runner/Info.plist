@@ -45,9 +45,11 @@
 		<key>NSUserNotificationsUsageDescription</key>
 		<string>Get notified about community updates, safety alerts, events, and messages from your neighbors.</string>
 		<key>NSCameraUsageDescription</key>
-		<string>Take photos to share with your community in posts about events, marketplace items, and neighborhood updates</string>
+		<string>Take photos and videos to share with your community in posts about events, marketplace items, and neighborhood updates</string>
+		<key>NSMicrophoneUsageDescription</key>
+		<string>Record audio with your videos to share in community posts</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Select photos from your library to share in community posts</string>
+		<string>Select photos and videos from your library to share in community posts</string>
 		<key>NSPhotoLibraryAddUsageDescription</key>
 		<string>Save community photos and event images to your photo library</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
