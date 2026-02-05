@@ -30,14 +30,14 @@ class PostActionsRow extends StatelessWidget {
 
     return Row(
       children: [
-        // Reaction button
+        // Reaction button — always thumbs up, filled when user has reacted
         _ActionButton(
           icon: post.hasUserReacted
-              ? _getReactionIcon(post.userReaction)
+              ? Icons.thumb_up_rounded
               : Icons.thumb_up_outlined,
           label: post.reactionCount > 0 ? '${post.reactionCount}' : null,
           isActive: post.hasUserReacted,
-          activeColor: _getReactionColor(post.userReaction, theme),
+          activeColor: theme.colorScheme.primary,
           onTap: onReactionTap,
           compact: compact,
         ),
@@ -73,33 +73,6 @@ class PostActionsRow extends StatelessWidget {
     );
   }
 
-  IconData _getReactionIcon(String? reactionType) {
-    switch (reactionType) {
-      case 'love':
-        return Icons.favorite_rounded;
-      case 'helpful':
-        return Icons.lightbulb_rounded;
-      case 'thanks':
-        return Icons.volunteer_activism_rounded;
-      case 'like':
-      default:
-        return Icons.thumb_up_rounded;
-    }
-  }
-
-  Color _getReactionColor(String? reactionType, ThemeData theme) {
-    switch (reactionType) {
-      case 'love':
-        return Colors.red;
-      case 'helpful':
-        return Colors.amber;
-      case 'thanks':
-        return Colors.purple;
-      case 'like':
-      default:
-        return theme.colorScheme.primary;
-    }
-  }
 }
 
 class _ActionButton extends StatelessWidget {

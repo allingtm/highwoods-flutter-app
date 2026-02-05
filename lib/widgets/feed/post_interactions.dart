@@ -24,6 +24,7 @@ void showReactionPicker({
   showModalBottomSheet(
     context: context,
     builder: (context) => ReactionPickerSheet(
+      postId: post.id,
       currentReaction: post.userReaction,
       onReactionSelected: (reactionType) {
         Navigator.pop(context);

@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/feed_provider.dart';
 import '../../theme/app_theme.dart';
 
-/// Bottom sheet widget for selecting reactions on posts
-class ReactionPickerSheet extends StatelessWidget {
+/// Bottom sheet widget for selecting reactions on posts.
+/// Shows per-type reaction counts fetched lazily when the sheet opens.
+class ReactionPickerSheet extends ConsumerWidget {
   const ReactionPickerSheet({
     super.key,
+    required this.postId,
     required this.currentReaction,
     required this.onReactionSelected,
   });
 
+  final String postId;
   final String? currentReaction;
   final void Function(String) onReactionSelected;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
     final theme = Theme.of(context);
+    final countsAsync = ref.watch(postReactionCountsProvider(postId));
+
+    // Resolve counts: use fetched data, or null while loading
+    final counts = countsAsync.whenOrNull(data: (data) => data);
 
     return SafeArea(
       child: Padding(
@@ -37,6 +46,7 @@ class ReactionPickerSheet extends StatelessWidget {
                   label: 'Like',
                   color: Colors.blue,
                   isSelected: currentReaction == 'like',
+                  count: counts?['like'],
                   onTap: () => onReactionSelected('like'),
                 ),
                 ReactionButton(
@@ -45,6 +55,7 @@ class ReactionPickerSheet extends StatelessWidget {
                   label: 'Love',
                   color: Colors.red,
                   isSelected: currentReaction == 'love',
+                  count: counts?['love'],
                   onTap: () => onReactionSelected('love'),
                 ),
                 ReactionButton(
@@ -53,6 +64,7 @@ class ReactionPickerSheet extends StatelessWidget {
                   label: 'Helpful',
                   color: Colors.amber,
                   isSelected: currentReaction == 'helpful',
+                  count: counts?['helpful'],
                   onTap: () => onReactionSelected('helpful'),
                 ),
                 ReactionButton(
@@ -61,6 +73,7 @@ class ReactionPickerSheet extends StatelessWidget {
                   label: 'Thanks',
                   color: Colors.purple,
                   isSelected: currentReaction == 'thanks',
+                  count: counts?['thanks'],
                   onTap: () => onReactionSelected('thanks'),
                 ),
               ],
@@ -83,6 +96,7 @@ class ReactionButton extends StatelessWidget {
     required this.color,
     required this.isSelected,
     required this.onTap,
+    this.count,
   });
 
   final String type;
@@ -91,6 +105,7 @@ class ReactionButton extends StatelessWidget {
   final Color color;
   final bool isSelected;
   final VoidCallback onTap;
+  final int? count;
 
   @override
   Widget build(BuildContext context) {
@@ -122,6 +137,13 @@ class ReactionButton extends StatelessWidget {
               style: theme.textTheme.labelMedium?.copyWith(
                 color: isSelected ? color : theme.colorScheme.onSurfaceVariant,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+            SizedBox(height: 2),
+            Text(
+              count != null ? '$count' : '...',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),
             ),
           ],

@@ -224,6 +224,16 @@ final postCommentsProvider = FutureProvider.family<List<PostComment>, String>((r
 });
 
 // ============================================================
+// Post Reaction Counts Provider
+// ============================================================
+
+/// Per-type reaction counts for a specific post (lazy-loaded when bottom sheet opens)
+final postReactionCountsProvider = FutureProvider.family<Map<String, int>, String>((ref, postId) async {
+  final repository = ref.watch(feedRepositoryProvider);
+  return repository.getReactionCounts(postId);
+});
+
+// ============================================================
 // User Posts Provider
 // ============================================================
 
@@ -351,6 +361,9 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       // Also update feed list state
       _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
+
+      // Invalidate reaction counts so bottom sheet shows fresh data
+      _ref.invalidate(postReactionCountsProvider(postId));
 
       // Invalidate profile providers so they refresh when viewed
       _ref.invalidate(userLikedPostsProvider);
