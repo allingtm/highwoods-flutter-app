@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/post_category.dart';
 import '../models/post_type.dart';
 import '../models/feed/feed_models.dart';
@@ -82,8 +84,44 @@ final selectedCategoryProvider = StateProvider<PostCategory?>((ref) => null);
 /// Feed sort order
 enum FeedSort { newest, active }
 
-/// Currently selected sort order
-final feedSortProvider = StateProvider<FeedSort>((ref) => FeedSort.newest);
+const String _feedSortKey = 'feed_sort';
+
+/// Notifier for managing feed sort state with persistence
+class FeedSortNotifier extends StateNotifier<FeedSort> {
+  FeedSortNotifier() : super(FeedSort.newest) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_feedSortKey);
+      if (saved != null) {
+        state = FeedSort.values.firstWhere(
+          (v) => v.name == saved,
+          orElse: () => FeedSort.newest,
+        );
+      }
+    } catch (e) {
+      debugPrint('Failed to load feed sort: $e');
+    }
+  }
+
+  Future<void> setSort(FeedSort sort) async {
+    state = sort;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_feedSortKey, sort.name);
+    } catch (e) {
+      debugPrint('Failed to save feed sort: $e');
+    }
+  }
+}
+
+/// Currently selected sort order (persisted across restarts)
+final feedSortProvider = StateNotifierProvider<FeedSortNotifier, FeedSort>(
+  (ref) => FeedSortNotifier(),
+);
 
 // ============================================================
 // Feed Posts Provider

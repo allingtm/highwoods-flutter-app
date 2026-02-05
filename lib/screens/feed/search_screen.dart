@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../providers/feed_provider.dart';
+import '../../theme/app_color_palette.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_typography.dart';
@@ -85,25 +86,64 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 0,
-        title: TextField(
-          controller: _searchController,
-          focusNode: _focusNode,
-          onChanged: _onSearchChanged,
-          decoration: InputDecoration(
-            hintText: 'Search posts...',
-            border: InputBorder.none,
-            hintStyle: AppTypography.bodyLarge.copyWith(
-              color: AppColors.hintText,
-            ),
-            suffixIcon: query.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: _clearSearch,
-                  )
-                : null,
+        title: Container(
+          margin: EdgeInsets.only(right: tokens.spacingLg),
+          decoration: BoxDecoration(
+            color: context.colors.surfaceVariant,
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
           ),
-          style: AppTypography.bodyLarge,
-          textInputAction: TextInputAction.search,
+          child: TextField(
+            controller: _searchController,
+            focusNode: _focusNode,
+            onChanged: _onSearchChanged,
+            decoration: InputDecoration(
+              hintText: 'Search posts...',
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              filled: false,
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: tokens.spacingMd,
+                vertical: tokens.spacingSm + 2,
+              ),
+              prefixIcon: Padding(
+                padding: EdgeInsets.only(
+                  left: tokens.spacingMd,
+                  right: tokens.spacingSm,
+                ),
+                child: Icon(
+                  Icons.search_rounded,
+                  size: 20,
+                  color: context.colors.textMuted,
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(
+                minWidth: 36,
+                minHeight: 0,
+              ),
+              hintStyle: AppTypography.bodyLarge.copyWith(
+                color: context.colors.textMuted,
+              ),
+              suffixIcon: query.isNotEmpty
+                  ? IconButton(
+                      icon: Icon(
+                        Icons.clear,
+                        size: 20,
+                        color: context.colors.textMuted,
+                      ),
+                      onPressed: _clearSearch,
+                    )
+                  : null,
+            ),
+            style: AppTypography.bodyLarge.copyWith(
+              color: context.colors.textPrimary,
+            ),
+            textInputAction: TextInputAction.search,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),

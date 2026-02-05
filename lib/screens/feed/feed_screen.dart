@@ -180,7 +180,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                       padding: EdgeInsets.symmetric(horizontal: tokens.spacingLg),
                       child: _SortToggle(
                         sort: feedSort,
-                        onChanged: (sort) => ref.read(feedSortProvider.notifier).state = sort,
+                        onChanged: (sort) => ref.read(feedSortProvider.notifier).setSort(sort),
                       ),
                     ),
                   ],
