@@ -331,10 +331,12 @@ Future<void> removeConnection(
 /// Create an invitation to share via native share
 Future<Invitation> createInvitation(
   WidgetRef ref, {
+  required String recipientName,
   String? message,
 }) async {
   final repository = ref.read(connectionsRepositoryProvider);
   final invitation = await repository.createInvitation(
+    recipientName: recipientName,
     message: message,
   );
 

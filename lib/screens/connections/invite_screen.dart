@@ -15,12 +15,14 @@ class InviteScreen extends ConsumerStatefulWidget {
 }
 
 class _InviteScreenState extends ConsumerState<InviteScreen> {
+  final _recipientNameController = TextEditingController();
   final _messageController = TextEditingController();
   final _shareButtonKey = GlobalKey();
   bool _isLoading = false;
 
   @override
   void dispose() {
+    _recipientNameController.dispose();
     _messageController.dispose();
     super.dispose();
   }
@@ -62,6 +64,20 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: tokens.spacing2xl),
+
+            // Recipient Name Field (required)
+            TextFormField(
+              controller: _recipientNameController,
+              textInputAction: TextInputAction.next,
+              textCapitalization: TextCapitalization.words,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(
+                labelText: 'Who is this invite for?',
+                hintText: 'Enter recipient\'s name',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: tokens.spacingMd),
 
             // Personal Message Field
             TextFormField(
@@ -112,7 +128,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             // Share Button
             FilledButton.icon(
               key: _shareButtonKey,
-              onPressed: _isLoading ? null : _shareInvitation,
+              onPressed: _isLoading || _recipientNameController.text.trim().isEmpty
+                  ? null
+                  : _shareInvitation,
               icon: _isLoading
                   ? SizedBox(
                       height: 20,
@@ -228,6 +246,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                                   ),
                             ),
                           ],
+                        ),
+                        // Recipient name display
+                        SizedBox(height: tokens.spacingSm),
+                        Text(
+                          invitation.recipientDisplay,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                         // Invite code display
                         if (invitation.code != null) ...[
@@ -377,6 +403,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       // Create the invitation in the database
       final invitation = await createInvitation(
         ref,
+        recipientName: _recipientNameController.text.trim(),
         message: _messageController.text.trim().isNotEmpty
             ? _messageController.text.trim()
             : null,
@@ -400,6 +427,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       );
 
       if (mounted) {
+        _recipientNameController.clear();
         _messageController.clear();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Invitation created!')),

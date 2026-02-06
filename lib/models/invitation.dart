@@ -48,6 +48,7 @@ class Invitation {
   final String id;
   final String inviterId;
   final String? email; // Optional - may be null when shared via native share
+  final String? recipientName; // Name of who the invite is for
   final String? message;
   final String token;
   final String? code; // Short, human-readable code (e.g., HW-ABC123)
@@ -61,6 +62,7 @@ class Invitation {
     required this.id,
     required this.inviterId,
     this.email,
+    this.recipientName,
     this.message,
     required this.token,
     this.code,
@@ -76,6 +78,7 @@ class Invitation {
       id: json['id'] as String,
       inviterId: json['inviter_id'] as String,
       email: json['email'] as String?,
+      recipientName: json['recipient_name'] as String?,
       message: json['message'] as String?,
       token: json['token'] as String,
       code: json['code'] as String?,
@@ -94,6 +97,7 @@ class Invitation {
       'id': id,
       'inviter_id': inviterId,
       if (email != null) 'email': email,
+      if (recipientName != null) 'recipient_name': recipientName,
       if (message != null) 'message': message,
       'token': token,
       if (code != null) 'code': code,
@@ -109,6 +113,7 @@ class Invitation {
     String? id,
     String? inviterId,
     String? email,
+    String? recipientName,
     String? message,
     String? token,
     String? code,
@@ -122,6 +127,7 @@ class Invitation {
       id: id ?? this.id,
       inviterId: inviterId ?? this.inviterId,
       email: email ?? this.email,
+      recipientName: recipientName ?? this.recipientName,
       message: message ?? this.message,
       token: token ?? this.token,
       code: code ?? this.code,
@@ -144,7 +150,7 @@ class Invitation {
   }
 
   /// Get display text for who the invitation was sent to
-  String get recipientDisplay => email ?? 'Shared via link';
+  String get recipientDisplay => recipientName ?? email ?? 'Shared via link';
 
   /// Check if this invitation has expired
   bool get isExpired =>

@@ -310,6 +310,7 @@ class ConnectionsRepository {
   /// Creates an invitation to share via native share (WhatsApp, SMS, Email, etc.)
   /// Returns the invitation with the token/link and code to share
   Future<Invitation> createInvitation({
+    required String recipientName,
     String? message,
   }) async {
     try {
@@ -325,6 +326,7 @@ class ConnectionsRepository {
           .from('invitations')
           .insert({
             'inviter_id': userId,
+            'recipient_name': recipientName,
             if (message != null && message.isNotEmpty) 'message': message,
             'token': token,
             'code': code,
