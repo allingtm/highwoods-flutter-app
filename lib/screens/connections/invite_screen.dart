@@ -36,7 +36,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       appBar: AppBar(
         title: const Text('Invite Someone'),
       ),
-      body: SingleChildScrollView(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
         padding: EdgeInsets.all(tokens.spacingXl),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -159,6 +161,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             _buildSentInvitations(context, tokens, colorScheme),
           ],
         ),
+      ),
       ),
     );
   }
@@ -427,6 +430,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       );
 
       if (mounted) {
+        FocusScope.of(context).unfocus();
         _recipientNameController.clear();
         _messageController.clear();
         ScaffoldMessenger.of(context).showSnackBar(

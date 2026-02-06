@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'core/config/sentry_config.dart';
 import 'core/config/supabase_config.dart';
 import 'core/deep_link_handler.dart';
 import 'core/router/app_router.dart';
@@ -24,21 +26,30 @@ Future<void> main() async {
 
   await dotenv.load(fileName: '.env');
 
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    anonKey: SupabaseConfig.anonKey,
-    authOptions: const FlutterAuthClientOptions(
-      authFlowType: AuthFlowType.pkce,
-    ),
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = SentryConfig.dsn;
+      options.tracesSampleRate = 1.0;
+      options.profilesSampleRate = 1.0;
+    },
+    appRunner: () async {
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        anonKey: SupabaseConfig.anonKey,
+        authOptions: const FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce,
+        ),
+      );
+
+      // Initialize push notifications (OneSignal)
+      await NotificationService.initialize();
+
+      // Initialize in-app purchases (RevenueCat)
+      await PurchaseService.initialize();
+
+      runApp(const ProviderScope(child: MainApp()));
+    },
   );
-
-  // Initialize push notifications (OneSignal)
-  await NotificationService.initialize();
-
-  // Initialize in-app purchases (RevenueCat)
-  await PurchaseService.initialize();
-
-  runApp(const ProviderScope(child: MainApp()));
 }
 
 class MainApp extends ConsumerStatefulWidget {

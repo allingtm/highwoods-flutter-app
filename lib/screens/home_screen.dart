@@ -310,6 +310,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
 
+          // Test Sentry (remove after verifying)
+          _buildDrawerItem(
+            context,
+            icon: Icons.bug_report_outlined,
+            label: 'Test Sentry',
+            onTap: () {
+              Navigator.of(context).pop();
+              throw StateError('Sentry test exception');
+            },
+          ),
           // Sign Out at bottom
           const Divider(height: 1),
           _buildDrawerItem(

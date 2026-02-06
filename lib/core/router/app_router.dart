@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import '../../models/post_category.dart';
 import '../../screens/welcome_screen.dart';
 import '../../screens/auth/login_screen.dart';
@@ -28,6 +29,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final isAuthenticated = ref.watch(isAuthenticatedProvider);
 
   return GoRouter(
+    observers: [SentryNavigatorObserver()],
     redirect: (context, state) {
       final isAuth = isAuthenticated;
       final location = state.matchedLocation;
