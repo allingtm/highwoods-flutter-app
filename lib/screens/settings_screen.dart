@@ -64,19 +64,6 @@ class SettingsScreen extends ConsumerWidget {
 
           SizedBox(height: tokens.spacingXl),
 
-          // Account Section
-          _buildSectionHeader(context, 'Account'),
-          SizedBox(height: tokens.spacingSm),
-          _buildSettingsTile(
-            context,
-            icon: Icons.person_outline,
-            title: 'Edit Profile',
-            subtitle: 'Update your profile information',
-            onTap: () => context.push('/profile'),
-          ),
-
-          SizedBox(height: tokens.spacingXl),
-
           // About Section
           _buildSectionHeader(context, 'About'),
           SizedBox(height: tokens.spacingSm),
@@ -788,13 +775,13 @@ class SettingsScreen extends ConsumerWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Type DELETE to confirm:'),
+              const Text('Type DELETE ACCOUNT to confirm:'),
               SizedBox(height: tokens.spacingMd),
               TextField(
                 controller: textController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'DELETE',
+                  hintText: 'DELETE ACCOUNT',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(tokens.radiusMd),
                   ),
@@ -809,13 +796,13 @@ class SettingsScreen extends ConsumerWidget {
               child: const Text('Cancel'),
             ),
             TextButton(
-              onPressed: textController.text == 'DELETE'
+              onPressed: textController.text == 'DELETE ACCOUNT'
                   ? () => Navigator.pop(dialogContext, true)
                   : null,
               child: Text(
                 'Permanently Delete',
                 style: TextStyle(
-                  color: textController.text == 'DELETE'
+                  color: textController.text == 'DELETE ACCOUNT'
                       ? Theme.of(dialogContext).colorScheme.error
                       : Theme.of(dialogContext).colorScheme.onSurface.withValues(alpha: 0.38),
                 ),
