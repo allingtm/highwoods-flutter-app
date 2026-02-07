@@ -180,7 +180,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                       selectedCategory: selectedCategory,
                       onCategorySelected: _onCategorySelected,
                     ),
-                    SizedBox(height: tokens.spacingSm),
+                    SizedBox(height: tokens.spacingMd),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: tokens.spacingLg),
                       child: _SortToggle(
@@ -499,7 +499,7 @@ class _SortChip extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacingMd,
-            vertical: tokens.spacingXs,
+            vertical: tokens.spacingSm,
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(tokens.radiusXl),

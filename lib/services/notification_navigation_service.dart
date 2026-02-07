@@ -350,7 +350,12 @@ class NotificationNavigationService extends ChangeNotifier {
         targetRoute: normalizedPath,
       );
     }
-    if (normalizedPath.startsWith('/settings')) {
+    if (normalizedPath.startsWith('/appearance') ||
+        normalizedPath.startsWith('/notifications') ||
+        normalizedPath.startsWith('/privacy') ||
+        normalizedPath.startsWith('/subscription') ||
+        normalizedPath.startsWith('/account') ||
+        normalizedPath.startsWith('/about')) {
       return NotificationRoute(
         parentRoute: '/home',
         targetRoute: normalizedPath,

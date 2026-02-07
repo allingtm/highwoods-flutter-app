@@ -100,7 +100,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   void _onDiscussionSelected() {
     setState(() {
       _isDiscussionFlow = true;
-      _selectedCategory = PostCategory.social;
+      _selectedCategory = PostCategory.discussion;
       _selectedPostType = PostType.discussion;
       _currentStep = CreatePostStep.postDetails;
       _errorMessage = null;

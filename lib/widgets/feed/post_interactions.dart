@@ -135,6 +135,7 @@ bool shouldShowMessageButton({
     PostCategory.jobs,
     PostCategory.lostFound,
     PostCategory.social,
+    PostCategory.discussion,
     PostCategory.recommendations,
   };
 

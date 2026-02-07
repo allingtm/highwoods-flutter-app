@@ -188,6 +188,21 @@ class FeedRepository {
     }
   }
 
+  /// Gets the number of posts by a user
+  Future<int> getPostCount(String userId) async {
+    try {
+      final response = await _supabase
+          .from('posts')
+          .select()
+          .eq('author_id', userId)
+          .neq('status', 'removed');
+
+      return (response as List).length;
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to get post count: ${e.message}');
+    }
+  }
+
   /// Gets user's own posts
   Future<List<Post>> getUserPosts(String userId) async {
     try {

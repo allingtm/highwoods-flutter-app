@@ -329,6 +329,12 @@ final postReactionCountsProvider = FutureProvider.family<Map<String, int>, Strin
 // User Posts Provider
 // ============================================================
 
+/// Post count for a specific user
+final userPostCountProvider = FutureProvider.family<int, String>((ref, userId) async {
+  final repository = ref.watch(feedRepositoryProvider);
+  return repository.getPostCount(userId);
+});
+
 /// Current user's own posts
 final userPostsProvider = FutureProvider<List<Post>>((ref) async {
   final user = ref.watch(currentUserProvider);

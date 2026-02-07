@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -380,6 +381,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 maxLines: 4,
                 minLines: 1,
+                maxLength: 2000,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                buildCounter: (context, {required currentLength, required isFocused, required maxLength}) => null,
                 decoration: InputDecoration(
                   hintText: 'Type a message...',
                   border: OutlineInputBorder(

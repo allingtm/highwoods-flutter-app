@@ -84,11 +84,13 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               controller: _recipientNameController,
               textInputAction: TextInputAction.next,
               textCapitalization: TextCapitalization.words,
+              maxLength: 100,
               onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 labelText: 'Who is this invite for?',
                 hintText: 'Enter recipient\'s name',
                 border: OutlineInputBorder(),
+                counterText: '',
               ),
             ),
             SizedBox(height: tokens.spacingMd),

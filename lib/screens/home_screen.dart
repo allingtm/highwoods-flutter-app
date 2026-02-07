@@ -252,11 +252,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 _buildDrawerItem(
                   context,
-                  icon: Icons.settings_outlined,
-                  label: 'Settings',
+                  icon: Icons.palette_outlined,
+                  label: 'Appearance',
                   onTap: () {
                     Navigator.pop(context);
-                    context.push('/settings');
+                    context.push('/appearance');
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.notifications_outlined,
+                  label: 'Notifications',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/notifications');
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.lock_outline,
+                  label: 'Privacy',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/privacy');
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.star_outline,
+                  label: 'Subscription',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/subscription');
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.manage_accounts_outlined,
+                  label: 'Account',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/account');
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.info_outline,
+                  label: 'About',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/about');
                   },
                 ),
                 const Divider(),

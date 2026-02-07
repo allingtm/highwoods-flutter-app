@@ -22,7 +22,12 @@ import '../../screens/connections/accept_invite_screen.dart';
 import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
 import '../../screens/directory/promo_detail_screen.dart';
-import '../../screens/settings_screen.dart';
+import '../../screens/settings/appearance_screen.dart';
+import '../../screens/settings/notifications_screen.dart';
+import '../../screens/settings/privacy_screen.dart';
+import '../../screens/settings/subscription_screen.dart';
+import '../../screens/settings/account_screen.dart';
+import '../../screens/settings/about_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/notification_navigation_service.dart';
 
@@ -215,9 +220,34 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: '/settings',
-        name: 'settings',
-        builder: (context, state) => const SettingsScreen(),
+        path: '/appearance',
+        name: 'appearance',
+        builder: (context, state) => const AppearanceScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        builder: (context, state) => const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/privacy',
+        name: 'privacy',
+        builder: (context, state) => const PrivacyScreen(),
+      ),
+      GoRoute(
+        path: '/subscription',
+        name: 'subscription',
+        builder: (context, state) => const SubscriptionScreen(),
+      ),
+      GoRoute(
+        path: '/account',
+        name: 'account',
+        builder: (context, state) => const AccountScreen(),
+      ),
+      GoRoute(
+        path: '/about',
+        name: 'about',
+        builder: (context, state) => const AboutScreen(),
       ),
       GoRoute(
         path: '/auth/confirm',

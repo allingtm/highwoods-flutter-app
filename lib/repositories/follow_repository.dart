@@ -55,4 +55,36 @@ class FollowRepository {
       throw Exception('Failed to get follower count: ${e.message}');
     }
   }
+
+  /// Gets follower count for the current user (bypasses privacy check)
+  Future<int> getOwnFollowerCount() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return 0;
+
+      final response = await _supabase
+          .from('profiles')
+          .select('follower_count')
+          .eq('id', userId)
+          .single();
+
+      return response['follower_count'] as int? ?? 0;
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to get follower count: ${e.message}');
+    }
+  }
+
+  /// Gets the number of users that a user is following
+  Future<int> getFollowingCount(String userId) async {
+    try {
+      final response = await _supabase
+          .from('follows')
+          .select()
+          .eq('follower_id', userId);
+
+      return (response as List).length;
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to get following count: ${e.message}');
+    }
+  }
 }

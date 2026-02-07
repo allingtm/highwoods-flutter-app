@@ -270,8 +270,9 @@ enum PostType {
         return PostCategory.lostFound;
       case PostType.event:
       case PostType.hobbyPartner:
-      case PostType.discussion:
         return PostCategory.social;
+      case PostType.discussion:
+        return PostCategory.discussion;
       case PostType.lookingForWork:
       case PostType.hiring:
         return PostCategory.jobs;

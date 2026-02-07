@@ -158,7 +158,8 @@ class DeepLinkHandler {
             break;
 
           case 'settings':
-            _router.go('/settings');
+            // Settings was split into individual screens; default to appearance
+            _router.go('/appearance');
             break;
 
           case 'home':

@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_profile_provider.dart';
+import '../services/r2_storage_service.dart';
 import '../theme/app_color_palette.dart';
 import '../theme/app_theme.dart';
 import '../widgets/widgets.dart';
@@ -27,6 +30,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isUsernameAvailable = true;
   String? _originalUsername;
   Timer? _usernameDebounce;
+  File? _selectedAvatarFile;
 
   @override
   void initState() {
@@ -93,6 +97,80 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     });
   }
 
+  void _showAvatarPicker() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt, color: colorScheme.primary),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library, color: colorScheme.primary),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 85,
+      );
+
+      if (picked != null && mounted) {
+        setState(() {
+          _selectedAvatarFile = File(picked.path);
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<String?> _uploadAvatar() async {
+    if (_selectedAvatarFile == null) return null;
+
+    final r2 = R2StorageService();
+    final presigned = await r2.getPresignedUploadUrl(
+      postId: 'avatar',
+      contentType: 'image/jpeg',
+    );
+
+    final bytes = await _selectedAvatarFile!.readAsBytes();
+    await r2.uploadToR2(
+      presignedUrl: presigned.presignedUrl,
+      bytes: bytes,
+      contentType: 'image/jpeg',
+    );
+
+    return presigned.publicUrl;
+  }
+
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_isUsernameAvailable) return;
@@ -107,11 +185,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final lastName = _lastNameController.text.trim();
       final bio = _bioController.text.trim();
 
+      // Upload avatar if a new one was selected
+      final avatarUrl = await _uploadAvatar();
+
       await ref.read(userProfileNotifierProvider.notifier).updateProfile(
             username: username != _originalUsername ? username : null,
             firstName: firstName.isNotEmpty ? firstName : null,
             lastName: lastName.isNotEmpty ? lastName : null,
             bio: bio.isNotEmpty ? bio : null,
+            avatarUrl: avatarUrl,
           );
 
       if (mounted) {
@@ -138,6 +220,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
+    final theme = Theme.of(context);
     final profile = ref.watch(userProfileNotifierProvider);
 
     return Scaffold(
@@ -158,16 +241,105 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Avatar picker
+                    Center(
+                      child: GestureDetector(
+                        onTap: _showAvatarPicker,
+                        child: Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 55,
+                              backgroundColor: theme.colorScheme.primaryContainer,
+                              backgroundImage: _selectedAvatarFile != null
+                                  ? FileImage(_selectedAvatarFile!)
+                                  : null,
+                              child: _selectedAvatarFile != null
+                                  ? null
+                                  : profileData.avatarUrl != null
+                                      ? ClipOval(
+                                          child: Image.network(
+                                            profileData.avatarUrl!,
+                                            width: 110,
+                                            height: 110,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Icon(
+                                                Icons.person,
+                                                size: 55,
+                                                color: theme.colorScheme.onPrimaryContainer,
+                                              );
+                                            },
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.person,
+                                          size: 55,
+                                          color: theme.colorScheme.onPrimaryContainer,
+                                        ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: theme.colorScheme.surface,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.camera_alt_outlined,
+                                  size: 16,
+                                  color: theme.colorScheme.onPrimary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacingXl),
                     AppTextField.name(
                       controller: _firstNameController,
                       label: 'First Name',
                       hint: 'Enter your first name',
+                      validator: (value) {
+                        if (value != null && value.trim().isNotEmpty) {
+                          if (value.trim().length < 2) {
+                            return 'First name must be at least 2 characters';
+                          }
+                          if (value.trim().length > 50) {
+                            return 'First name must be at most 50 characters';
+                          }
+                          if (!RegExp(r'^[a-zA-Z\s\-]+$').hasMatch(value.trim())) {
+                            return 'First name can only contain letters, spaces, and hyphens';
+                          }
+                        }
+                        return null;
+                      },
                     ),
                     SizedBox(height: tokens.spacingLg),
                     AppTextField.name(
                       controller: _lastNameController,
                       label: 'Last Name',
                       hint: 'Enter your last name',
+                      validator: (value) {
+                        if (value != null && value.trim().isNotEmpty) {
+                          if (value.trim().length < 2) {
+                            return 'Last name must be at least 2 characters';
+                          }
+                          if (value.trim().length > 50) {
+                            return 'Last name must be at most 50 characters';
+                          }
+                          if (!RegExp(r'^[a-zA-Z\s\-]+$').hasMatch(value.trim())) {
+                            return 'Last name can only contain letters, spaces, and hyphens';
+                          }
+                        }
+                        return null;
+                      },
                     ),
                     SizedBox(height: tokens.spacingLg),
                     AppTextField.username(
@@ -177,11 +349,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         if (value == null || value.trim().isEmpty) {
                           return 'Username is required';
                         }
-                        if (value.trim().length < 3) {
+                        final trimmed = value.trim().toLowerCase();
+                        if (trimmed.length < 3) {
                           return 'Username must be at least 3 characters';
                         }
+                        if (trimmed.length > 30) {
+                          return 'Username must be at most 30 characters';
+                        }
+                        if (!RegExp(r'^[a-zA-Z0-9][a-zA-Z0-9_-]*$').hasMatch(trimmed)) {
+                          return 'Must start with a letter or number. Only letters, numbers, underscores, and hyphens allowed';
+                        }
                         if (!_isUsernameAvailable &&
-                            value.trim().toLowerCase() != _originalUsername) {
+                            trimmed != _originalUsername) {
                           return 'Username is already taken';
                         }
                         return null;

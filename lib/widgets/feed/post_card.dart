@@ -169,6 +169,8 @@ class PostCard extends StatelessWidget {
     switch (post.category) {
       case PostCategory.marketplace:
         return _MarketplaceContent(post: post);
+      case PostCategory.discussion:
+        return const SizedBox.shrink();
       case PostCategory.social:
         if (post.eventDetails != null) {
           return _EventContent(post: post);

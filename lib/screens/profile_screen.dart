@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/auth_provider.dart';
+import '../providers/feed_provider.dart';
+import '../providers/follow_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/widgets.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -12,24 +12,12 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.tokens;
+    final theme = Theme.of(context);
     final userProfile = ref.watch(userProfileNotifierProvider);
-    final currentUser = ref.watch(currentUserProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final authRepository = ref.read(authRepositoryProvider);
-              await authRepository.signOut();
-              if (context.mounted) {
-                context.go('/');
-              }
-            },
-          ),
-        ],
       ),
       body: SafeArea(
         child: userProfile.when(
@@ -42,101 +30,110 @@ class ProfileScreen extends ConsumerWidget {
                     Icon(Icons.error_outline, size: tokens.iconXl),
                     SizedBox(height: tokens.spacingLg),
                     const Text('Profile not found'),
-                    SizedBox(height: tokens.spacingSm),
-                    Text(
-                      'Email: ${currentUser?.email ?? "Unknown"}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
                   ],
                 ),
               );
             }
 
+            final postCountAsync =
+                ref.watch(userPostCountProvider(profile.id));
+            final followerCountAsync = ref.watch(ownFollowerCountProvider);
+            final followingCountAsync =
+                ref.watch(followingCountProvider(profile.id));
+
             return SingleChildScrollView(
-              padding: EdgeInsets.all(tokens.spacingXl),
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacingXl,
+                vertical: tokens.spacingLg,
+              ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Center(
-                    child: CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                      child: profile.avatarUrl != null
-                          ? ClipOval(
-                              child: Image.network(
-                                profile.avatarUrl!,
-                                width: 120,
-                                height: 120,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.person,
-                                    size: 60,
-                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                  );
-                                },
-                              ),
-                            )
-                          : Icon(
-                              Icons.person,
-                              size: 60,
-                              color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  // Avatar
+                  CircleAvatar(
+                    radius: 55,
+                    backgroundColor: theme.colorScheme.primaryContainer,
+                    child: profile.avatarUrl != null
+                        ? ClipOval(
+                            child: Image.network(
+                              profile.avatarUrl!,
+                              width: 110,
+                              height: 110,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.person,
+                                  size: 55,
+                                  color: theme
+                                      .colorScheme.onPrimaryContainer,
+                                );
+                              },
                             ),
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacingXl),
-                  AppCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Profile Information',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        SizedBox(height: tokens.spacingLg),
-                        AppProfileRow(
-                          icon: Icons.person_outline,
-                          label: 'First Name',
-                          value: profile.firstName ?? '-',
-                        ),
-                        Divider(height: tokens.spacingXl),
-                        AppProfileRow(
-                          icon: Icons.person_outline,
-                          label: 'Last Name',
-                          value: profile.lastName ?? '-',
-                        ),
-                        Divider(height: tokens.spacingXl),
-                        AppProfileRow(
-                          icon: Icons.email_outlined,
-                          label: 'Email',
-                          value: profile.email,
-                        ),
-                        if (profile.bio != null) ...[
-                          Divider(height: tokens.spacingXl),
-                          AppProfileRow(
-                            icon: Icons.info_outline,
-                            label: 'Bio',
-                            value: profile.bio!,
+                          )
+                        : Icon(
+                            Icons.person,
+                            size: 55,
+                            color: theme.colorScheme.onPrimaryContainer,
                           ),
-                        ],
-                        Divider(height: tokens.spacingXl),
-                        AppProfileRow(
-                          icon: Icons.calendar_today_outlined,
-                          label: 'Member Since',
-                          value: _formatDate(profile.createdAt),
-                        ),
-                      ],
-                    ),
                   ),
                   SizedBox(height: tokens.spacingLg),
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.edit_outlined),
-                      title: const Text('Edit Profile'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        context.push('/profile/edit');
-                      },
+
+                  // Full name
+                  Text(
+                    profile.fullName,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: tokens.spacingXs),
+
+                  // Username
+                  Text(
+                    '@${profile.username}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+
+                  // Bio
+                  if (profile.bio != null && profile.bio!.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacingMd),
+                    Text(
+                      profile.bio!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                  SizedBox(height: tokens.spacingXl),
+
+                  // Stats row
+                  Row(
+                    children: [
+                      _StatColumn(
+                        label: 'Posts',
+                        asyncValue: postCountAsync,
+                      ),
+                      _StatColumn(
+                        label: 'Followers',
+                        asyncValue: followerCountAsync,
+                      ),
+                      _StatColumn(
+                        label: 'Following',
+                        asyncValue: followingCountAsync,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: tokens.spacingXl),
+
+                  // Edit Profile button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => context.push('/profile/edit'),
+                      child: const Text('Edit Profile'),
                     ),
                   ),
                 ],
@@ -155,23 +152,18 @@ class ProfileScreen extends ConsumerWidget {
                   Icon(
                     Icons.error_outline,
                     size: tokens.iconXl,
-                    color: Theme.of(context).colorScheme.error,
+                    color: theme.colorScheme.error,
                   ),
                   SizedBox(height: tokens.spacingLg),
                   const Text('Error loading profile'),
-                  SizedBox(height: tokens.spacingSm),
-                  Text(
-                    error.toString(),
-                    style: Theme.of(context).textTheme.bodySmall,
-                    textAlign: TextAlign.center,
-                  ),
                   SizedBox(height: tokens.spacingLg),
-                  AppButton(
-                    text: 'Retry',
-                    fullWidth: false,
+                  FilledButton(
                     onPressed: () {
-                      ref.read(userProfileNotifierProvider.notifier).refresh();
+                      ref
+                          .read(userProfileNotifierProvider.notifier)
+                          .refresh();
                     },
+                    child: const Text('Retry'),
                   ),
                 ],
               ),
@@ -181,10 +173,55 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  String _formatDate(DateTime date) {
-    final day = date.day.toString().padLeft(2, '0');
-    final month = date.month.toString().padLeft(2, '0');
-    return '$day/$month/${date.year}';
+class _StatColumn extends StatelessWidget {
+  const _StatColumn({
+    required this.label,
+    required this.asyncValue,
+  });
+
+  final String label;
+  final AsyncValue<int> asyncValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Expanded(
+      child: Column(
+        children: [
+          asyncValue.when(
+            data: (count) => Text(
+              '$count',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            loading: () => SizedBox(
+              height: 22,
+              width: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            error: (_, __) => Text(
+              '-',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum PostCategory {
+  discussion,
   marketplace,
   recommendations,
   safety,
@@ -10,6 +11,8 @@ enum PostCategory {
 
   String get displayName {
     switch (this) {
+      case PostCategory.discussion:
+        return 'Discussion';
       case PostCategory.marketplace:
         return 'Marketplace';
       case PostCategory.recommendations:
@@ -27,6 +30,8 @@ enum PostCategory {
 
   String get dbValue {
     switch (this) {
+      case PostCategory.discussion:
+        return 'discussion';
       case PostCategory.marketplace:
         return 'marketplace';
       case PostCategory.recommendations:
@@ -44,6 +49,8 @@ enum PostCategory {
 
   IconData get icon {
     switch (this) {
+      case PostCategory.discussion:
+        return Icons.forum;
       case PostCategory.marketplace:
         return Icons.shopping_cart;
       case PostCategory.recommendations:
@@ -61,6 +68,8 @@ enum PostCategory {
 
   Color get color {
     switch (this) {
+      case PostCategory.discussion:
+        return const Color(0xFF6366F1); // Indigo
       case PostCategory.marketplace:
         return const Color(0xFF22C55E); // Green
       case PostCategory.recommendations:
@@ -78,6 +87,8 @@ enum PostCategory {
 
   static PostCategory fromString(String value) {
     switch (value) {
+      case 'discussion':
+        return PostCategory.discussion;
       case 'marketplace':
         return PostCategory.marketplace;
       case 'recommendations':
