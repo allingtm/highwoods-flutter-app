@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../models/invite_quota.dart';
 import '../../providers/connections_provider.dart';
+import '../../providers/user_profile_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
 
@@ -460,9 +461,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     return '${date.day}/${date.month}/${date.year}';
   }
 
-  String _buildShareMessage(String inviteLink, String? personalMessage, [String? code]) {
+  String _buildShareMessage(
+    String inviteLink,
+    String? personalMessage,
+    String? code,
+    String inviterName,
+  ) {
     final buffer = StringBuffer();
-    buffer.writeln("Hey! I'd like to invite you to join the Highwoods community app.");
+    buffer.writeln('Hey! $inviterName has invited you to connect on the Highwoods community app.');
     buffer.writeln();
 
     if (personalMessage != null && personalMessage.isNotEmpty) {
@@ -470,11 +476,13 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       buffer.writeln();
     }
 
-    buffer.writeln('Join here: $inviteLink');
+    buffer.writeln('Already a member? Search for "$inviterName" in the app and send a connection request.');
+    buffer.writeln();
+    buffer.writeln('New to Highwoods? Download the app and use the invite code below to register:');
+    buffer.writeln('Download: https://highwoods.app/download');
 
     if (code != null) {
-      buffer.writeln();
-      buffer.writeln('Or enter this invite code: $code');
+      buffer.writeln('Invite code: $code');
     }
 
     return buffer.toString();
@@ -494,17 +502,20 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       );
 
       // Build the share message
+      final profile = ref.read(userProfileProvider).valueOrNull;
+      final inviterName = profile?.fullName ?? 'A Highwoods member';
       final shareText = _buildShareMessage(
         invitation.inviteLink,
         invitation.message,
         invitation.code,
+        inviterName,
       );
 
       // Open native share sheet
       final box = _shareButtonKey.currentContext?.findRenderObject() as RenderBox?;
       await Share.share(
         shareText,
-        subject: 'Join the Highwoods Community',
+        subject: 'Highwoods Community Invitation',
         sharePositionOrigin: box != null
             ? box.localToGlobal(Offset.zero) & box.size
             : Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, 100),
@@ -541,12 +552,14 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     String? code,
     BuildContext buttonContext,
   ) async {
-    final shareText = _buildShareMessage(inviteLink, personalMessage, code);
+    final profile = ref.read(userProfileProvider).valueOrNull;
+    final inviterName = profile?.fullName ?? 'A Highwoods member';
+    final shareText = _buildShareMessage(inviteLink, personalMessage, code, inviterName);
     final box = buttonContext.findRenderObject() as RenderBox?;
 
     await Share.share(
       shareText,
-      subject: 'Join the Highwoods Community',
+      subject: 'Highwoods Community Invitation',
       sharePositionOrigin: box != null
           ? box.localToGlobal(Offset.zero) & box.size
           : Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, 100),
