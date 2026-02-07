@@ -8,6 +8,8 @@ import '../models/post_category.dart';
 import '../models/post_type.dart';
 import '../models/feed/feed_models.dart';
 import '../repositories/feed_repository.dart';
+import '../services/sentry_service.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'auth_provider.dart';
 
 // ============================================================
@@ -83,7 +85,7 @@ final selectedCategoryProvider = StateProvider<PostCategory?>((ref) => null);
 // ============================================================
 
 /// Feed sort order
-enum FeedSort { newest, active, following }
+enum FeedSort { newest, active, following, saved }
 
 const String _feedSortKey = 'feed_sort';
 
@@ -153,27 +155,44 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
     _cursorId = null;
     _hasMore = true;
 
+    final stopwatch = Stopwatch()..start();
+    final transaction = SentryService.startTransaction('feed.load', 'ui.load');
+
     try {
-      final posts = await _repository.getFeedPosts(
-        category: _category,
-        sort: _sort == FeedSort.active ? 'active' : 'new',
-        followingOnly: _sort == FeedSort.following,
-        limit: 20,
-      );
+      final List<Post> posts;
+
+      if (_sort == FeedSort.saved) {
+        posts = await _repository.getSavedPosts();
+        _hasMore = false;
+      } else {
+        posts = await _repository.getFeedPosts(
+          category: _category,
+          sort: _sort == FeedSort.active ? 'active' : 'new',
+          followingOnly: _sort == FeedSort.following,
+          limit: 20,
+        );
+        _hasMore = posts.length >= 20;
+        if (posts.isNotEmpty) {
+          _setCursor(posts.last);
+        }
+      }
 
       if (!mounted) return;
-
-      _hasMore = posts.length >= 20;
-      if (posts.isNotEmpty) {
-        _setCursor(posts.last);
-      }
 
       // Cache all posts for shared access across views
       _ref.read(postCacheProvider.notifier).cachePosts(posts);
 
       state = AsyncValue.data(posts);
+
+      await transaction.finish(status: const SpanStatus.ok());
+      SentryService.recordLatency('feed.load_ms', stopwatch.elapsedMilliseconds.toDouble(),
+          tags: {'sort': _sort.name, 'category': _category?.dbValue ?? 'all'});
+      SentryService.addBreadcrumb('Feed loaded', category: 'feed',
+          data: {'count': posts.length, 'sort': _sort.name});
     } catch (error, stackTrace) {
       if (!mounted) return;
+      await transaction.finish(status: const SpanStatus.internalError());
+      SentryService.captureError(error, stackTrace, operation: 'feed.load');
       state = AsyncValue.error(error, stackTrace);
     }
   }
@@ -189,7 +208,7 @@ class FeedPostsNotifier extends StateNotifier<AsyncValue<List<Post>>> {
   }
 
   Future<void> loadMore() async {
-    if (_isLoadingMore || !_hasMore) return;
+    if (_isLoadingMore || !_hasMore || _sort == FeedSort.saved) return;
 
     final currentPosts = state.valueOrNull ?? [];
     _isLoadingMore = true;
@@ -441,6 +460,8 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
       // Invalidate profile providers so they refresh when viewed
       _ref.invalidate(userLikedPostsProvider);
       _ref.invalidate(userPostsByIdProvider);
+
+      SentryService.countEvent('reaction.toggled', tags: {'type': reactionType});
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
       rethrow;
@@ -496,6 +517,7 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
         _ref.read(feedPostsNotifierProvider.notifier).updatePost(updatedPost);
       }
 
+      SentryService.countEvent('comment.added');
       return comment;
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
@@ -564,8 +586,12 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
     File? videoFile,
     int? videoDurationSeconds,
   }) async {
+    final stopwatch = Stopwatch()..start();
+    final transaction = SentryService.startTransaction('post.create', 'task');
+
     try {
       // Create the post first
+      final postSpan = transaction.startChild('db.insert', description: 'Create post record');
       final post = await _repository.createPost(
         category: category,
         postType: postType,
@@ -578,24 +604,31 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
         jobDetails: jobDetails,
         recommendationDetails: recommendationDetails,
       );
+      await postSpan.finish(status: const SpanStatus.ok());
 
       // Upload images if provided (mutually exclusive with video)
       List<PostImage>? uploadedImages;
       if (imageFiles != null && imageFiles.isNotEmpty) {
+        final imageSpan = transaction.startChild('file.upload',
+            description: 'Upload ${imageFiles.length} images');
         uploadedImages = await _repository.uploadPostImages(
           postId: post.id,
           files: imageFiles,
         );
+        await imageSpan.finish(status: const SpanStatus.ok());
       }
 
       // Upload video if provided (mutually exclusive with images)
       PostVideo? uploadedVideo;
       if (videoFile != null) {
+        final videoSpan = transaction.startChild('file.upload',
+            description: 'Upload video');
         uploadedVideo = await _repository.uploadPostVideo(
           postId: post.id,
           file: videoFile,
           durationSeconds: videoDurationSeconds,
         );
+        await videoSpan.finish(status: const SpanStatus.ok());
       }
 
       // Build the updated post with media
@@ -624,8 +657,18 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
         _pollVideoProcessing(post.id, uploadedVideo.streamVideoUid);
       }
 
+      await transaction.finish(status: const SpanStatus.ok());
+      SentryService.countEvent('post.created', tags: {
+        'category': category.dbValue,
+        'has_media': (imageFiles?.isNotEmpty == true || videoFile != null).toString(),
+      });
+      SentryService.recordLatency('post.create_ms', stopwatch.elapsedMilliseconds.toDouble());
+      SentryService.addBreadcrumb('Post created', category: 'feed',
+          data: {'category': category.dbValue});
+
       return postWithMedia;
     } catch (e) {
+      await transaction.finish(status: const SpanStatus.internalError());
       state = AsyncValue.error(e, StackTrace.current);
       rethrow;
     }
@@ -752,6 +795,8 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
 
       // Invalidate user posts
       _ref.invalidate(userPostsProvider);
+
+      SentryService.countEvent('post.deleted');
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
       rethrow;
@@ -939,6 +984,8 @@ class FeedRealtimeManager {
     subscribeToFeed();
     subscribeToAlerts();
     subscribeToReactions();
+    SentryService.addBreadcrumb('Feed realtime subscriptions started',
+        category: 'realtime');
   }
 
   Future<void> dispose() async {

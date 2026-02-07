@@ -3,8 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/connection.dart';
 import '../models/invitation.dart';
+import '../models/invite_quota.dart';
 import '../models/message.dart';
 import '../repositories/connections_repository.dart';
+import '../services/sentry_service.dart';
 
 // ============================================================
 // Repository Provider
@@ -177,6 +179,16 @@ final invitationsProvider =
 });
 
 // ============================================================
+// Invite Quota Provider
+// ============================================================
+
+/// Provider for the user's invitation quota
+final inviteQuotaProvider = FutureProvider<InviteQuota>((ref) async {
+  final repository = ref.watch(connectionsRepositoryProvider);
+  return repository.getInviteQuota();
+});
+
+// ============================================================
 // Conversations Provider
 // ============================================================
 
@@ -286,6 +298,7 @@ Future<Connection> sendConnectionRequest(
 ) async {
   final repository = ref.read(connectionsRepositoryProvider);
   final connection = await repository.sendConnectionRequest(recipientId);
+  SentryService.countEvent('connection.requested');
   return connection;
 }
 
@@ -342,6 +355,7 @@ Future<Invitation> createInvitation(
 
   // Update local state
   ref.read(invitationsProvider.notifier).addInvitation(invitation);
+  ref.invalidate(inviteQuotaProvider);
 
   return invitation;
 }
@@ -356,6 +370,7 @@ Future<void> cancelInvitation(
 
   // Update local state
   ref.read(invitationsProvider.notifier).removeInvitation(invitationId);
+  ref.invalidate(inviteQuotaProvider);
 }
 
 /// Send a message
@@ -368,6 +383,7 @@ Future<Message> sendMessage(
   required String content,
   String? postId,
 }) async {
+  final stopwatch = Stopwatch()..start();
   final repository = ref.read(connectionsRepositoryProvider);
   final message = await repository.sendMessage(
     recipientId: recipientId,
@@ -377,6 +393,9 @@ Future<Message> sendMessage(
 
   // Update conversations
   ref.read(conversationsProvider.notifier).updateConversation(message);
+
+  SentryService.countEvent('message.sent');
+  SentryService.recordLatency('message.send_ms', stopwatch.elapsedMilliseconds.toDouble());
 
   return message;
 }
@@ -465,6 +484,8 @@ class ConnectionsRealtimeManager {
     _isSubscribed = true;
     subscribeToMessages();
     subscribeToConnectionRequests();
+    SentryService.addBreadcrumb('Connections realtime subscriptions started',
+        category: 'realtime');
   }
 
   Future<void> dispose() async {

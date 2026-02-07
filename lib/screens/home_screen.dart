@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +7,6 @@ import '../providers/feed_provider.dart';
 import '../providers/presence_provider.dart';
 import '../providers/realtime_status_provider.dart';
 import '../providers/user_profile_provider.dart';
-import '../services/notification_navigation_service.dart';
 import '../theme/app_theme_tokens.dart';
 import 'feed/feed_screen.dart';
 import 'directory_screen.dart';
@@ -271,55 +269,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     context.push('/connections/invite');
                   },
                 ),
-                // Debug section - only visible in debug builds
-                if (kDebugMode) ...[
-                  const Divider(),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: tokens.spacingLg,
-                      vertical: tokens.spacingSm,
-                    ),
-                    child: Text(
-                      'Debug',
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  _buildDrawerItem(
-                    context,
-                    icon: Icons.notifications_outlined,
-                    label: 'Test Notification',
-                    onTap: () {
-                      Navigator.pop(context);
-                      // Trigger a test foreground notification
-                      NotificationNavigationService.instance.showForegroundNotification(
-                        title: 'Test Notification',
-                        body: 'This is a test notification to verify the snackbar display.',
-                        additionalData: {
-                          'type': 'post',
-                          'target_id': 'test-post-id',
-                        },
-                      );
-                    },
-                  ),
-                ],
               ],
             ),
           ),
 
-          // Test Sentry (remove after verifying)
-          _buildDrawerItem(
-            context,
-            icon: Icons.bug_report_outlined,
-            label: 'Test Sentry',
-            onTap: () {
-              Navigator.of(context).pop();
-              throw StateError('Sentry test exception');
-            },
-          ),
           // Sign Out at bottom
           const Divider(height: 1),
           _buildDrawerItem(

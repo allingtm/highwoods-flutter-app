@@ -142,10 +142,10 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
                   context.go('/home');
                 }
               }
-            } catch (e) {
+            } catch (e, stackTrace) {
               if (mounted) {
                 setState(() {
-                  _errorMessage = 'Failed to create profile: ${getErrorMessage(e)}';
+                  _errorMessage = 'Failed to create profile: ${handleError(e, stackTrace, operation: 'auth_create_profile')}';
                   _isProcessing = false;
                 });
               }
@@ -174,10 +174,10 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
           });
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (mounted) {
         setState(() {
-          _errorMessage = getErrorMessage(e);
+          _errorMessage = handleError(e, stackTrace, operation: 'auth_callback');
           _isProcessing = false;
         });
       }

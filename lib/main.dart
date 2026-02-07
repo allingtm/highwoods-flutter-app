@@ -12,11 +12,13 @@ import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
 import 'services/purchase_service.dart';
 import 'services/notification_navigation_service.dart';
+import 'services/sentry_service.dart';
 import 'theme/app_color_palette.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // Must be called before SentryFlutter.init for frame tracking
+  SentryWidgetsFlutterBinding.ensureInitialized();
 
   // Lock app to portrait mode only
   await SystemChrome.setPreferredOrientations([
@@ -25,12 +27,17 @@ Future<void> main() async {
   ]);
 
   await dotenv.load(fileName: '.env');
+  await SentryConfig.initialize();
 
   await SentryFlutter.init(
     (options) {
       options.dsn = SentryConfig.dsn;
-      options.tracesSampleRate = 1.0;
-      options.profilesSampleRate = 1.0;
+      options.release = SentryConfig.release;
+      options.environment = SentryConfig.environment;
+      options.tracesSampleRate = SentryConfig.isProduction ? 0.3 : 1.0;
+      options.profilesSampleRate = SentryConfig.isProduction ? 0.3 : 1.0;
+      options.captureFailedRequests = true;
+      options.beforeBreadcrumb = SentryService.beforeBreadcrumb;
     },
     appRunner: () async {
       await Supabase.initialize(

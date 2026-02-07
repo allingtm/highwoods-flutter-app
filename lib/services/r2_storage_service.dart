@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Represents a presigned upload URL response from the Edge Function
@@ -47,6 +48,7 @@ class PresignedDelete {
 /// Service for interacting with Cloudflare R2 storage via Supabase Edge Functions
 class R2StorageService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final _httpClient = SentryHttpClient(client: http.Client());
 
   /// Get a presigned URL for uploading a single file to R2
   Future<PresignedUpload> getPresignedUploadUrl({
@@ -117,7 +119,7 @@ class R2StorageService {
     required Uint8List bytes,
     required String contentType,
   }) async {
-    final response = await http.put(
+    final response = await _httpClient.put(
       Uri.parse(presignedUrl),
       headers: {
         'Content-Type': contentType,
@@ -167,7 +169,7 @@ class R2StorageService {
   }) async {
     final presigned = await getPresignedDeleteUrl(storagePath: storagePath);
 
-    final response = await http.delete(Uri.parse(presigned.presignedUrl));
+    final response = await _httpClient.delete(Uri.parse(presigned.presignedUrl));
 
     // R2 returns 204 for successful deletes
     if (response.statusCode != 204 && response.statusCode != 200) {

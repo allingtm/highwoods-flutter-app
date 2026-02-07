@@ -654,10 +654,10 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _presentPaywall(BuildContext context, WidgetRef ref) async {
     try {
       await ref.read(purchaseStateProvider.notifier).presentPaywall();
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(getErrorMessage(e))),
+          SnackBar(content: Text(handleError(e, stackTrace, operation: 'present_paywall'))),
         );
       }
     }
@@ -666,10 +666,10 @@ class SettingsScreen extends ConsumerWidget {
   Future<void> _presentCustomerCenter(BuildContext context, WidgetRef ref) async {
     try {
       await ref.read(purchaseStateProvider.notifier).presentCustomerCenter();
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(getErrorMessage(e))),
+          SnackBar(content: Text(handleError(e, stackTrace, operation: 'customer_center'))),
         );
       }
     }
@@ -690,10 +690,10 @@ class SettingsScreen extends ConsumerWidget {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(getErrorMessage(e))),
+          SnackBar(content: Text(handleError(e, stackTrace, operation: 'restore_purchases'))),
         );
       }
     }

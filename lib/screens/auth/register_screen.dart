@@ -88,10 +88,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           _errorMessage = result.error ?? 'Invalid invite code';
         }
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       setState(() {
         _isLoading = false;
-        _errorMessage = getErrorMessage(e);
+        _errorMessage = handleError(e, stackTrace, operation: 'register_validate_code');
       });
     }
   }
@@ -118,10 +118,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         _magicLinkSent = true;
         _isLoading = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
       setState(() {
         _isLoading = false;
-        _errorMessage = getErrorMessage(e);
+        _errorMessage = handleError(e, stackTrace, operation: 'register_send_link');
       });
     }
   }

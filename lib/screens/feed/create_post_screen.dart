@@ -589,9 +589,9 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         );
         context.pop();
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       setState(() {
-        _errorMessage = getErrorMessage(e);
+        _errorMessage = handleError(e, stackTrace, operation: 'create_post');
       });
     } finally {
       if (mounted) {

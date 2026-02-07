@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../models/invite_quota.dart';
 import '../../providers/connections_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
@@ -31,6 +32,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final colorScheme = Theme.of(context).colorScheme;
+    final quotaAsync = ref.watch(inviteQuotaProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -65,7 +67,15 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
                   ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: tokens.spacing2xl),
+            SizedBox(height: tokens.spacingXl),
+
+            // Quota Banner
+            quotaAsync.when(
+              data: (quota) => _buildQuotaBanner(context, tokens, colorScheme, quota),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
+            SizedBox(height: tokens.spacingXl),
 
             // Recipient Name Field (required)
             TextFormField(
@@ -130,7 +140,9 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             // Share Button
             FilledButton.icon(
               key: _shareButtonKey,
-              onPressed: _isLoading || _recipientNameController.text.trim().isEmpty
+              onPressed: _isLoading ||
+                      _recipientNameController.text.trim().isEmpty ||
+                      !(quotaAsync.valueOrNull?.hasRemaining ?? true)
                   ? null
                   : _shareInvitation,
               icon: _isLoading
@@ -162,6 +174,75 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  Widget _buildQuotaBanner(
+    BuildContext context,
+    AppThemeTokens tokens,
+    ColorScheme colorScheme,
+    InviteQuota quota,
+  ) {
+    final Color bannerColor;
+    final IconData bannerIcon;
+
+    if (quota.isAtCap && !quota.hasRemaining) {
+      bannerColor = colorScheme.error;
+      bannerIcon = Icons.block;
+    } else if (!quota.hasRemaining) {
+      bannerColor = Colors.orange;
+      bannerIcon = Icons.hourglass_empty;
+    } else {
+      bannerColor = colorScheme.primary;
+      bannerIcon = Icons.mail_outline;
+    }
+
+    return Container(
+      padding: EdgeInsets.all(tokens.spacingMd),
+      decoration: BoxDecoration(
+        color: bannerColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(tokens.radiusMd),
+        border: Border.all(color: bannerColor.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(bannerIcon, color: bannerColor, size: tokens.iconSm),
+              SizedBox(width: tokens.spacingSm),
+              Expanded(
+                child: Text(
+                  quota.statusMessage,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: bannerColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (quota.hasRemaining) ...[
+            SizedBox(height: tokens.spacingSm),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(tokens.radiusSm),
+              child: LinearProgressIndicator(
+                value: quota.used / quota.limit,
+                backgroundColor: bannerColor.withValues(alpha: 0.15),
+                valueColor: AlwaysStoppedAnimation<Color>(bannerColor),
+                minHeight: 6,
+              ),
+            ),
+            SizedBox(height: tokens.spacingXs),
+            Text(
+              '${quota.used} of ${quota.limit} used',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -439,9 +520,13 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final message = e.toString().toUpperCase().contains('INVITATION_LIMIT_EXCEEDED')
+            ? 'You have used all your available invitations.'
+            : 'Failed to create invitation: $e';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to create invitation: $e')),
+          SnackBar(content: Text(message)),
         );
+        ref.invalidate(inviteQuotaProvider);
       }
     } finally {
       if (mounted) {
@@ -480,7 +565,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
       await cancelInvitation(ref, invitationId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invitation cancelled')),
+          const SnackBar(content: Text('Invitation cancelled. Invite slot freed up.')),
         );
       }
     } catch (e) {

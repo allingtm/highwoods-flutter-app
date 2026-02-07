@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
+import '../services/sentry_service.dart';
 
 class AuthRepository {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -171,6 +172,7 @@ class AuthRepository {
       // Clear purchase user data
       await PurchaseService.logout();
       await _supabase.auth.signOut();
+      SentryService.addBreadcrumb('User signed out', category: 'auth');
     } on AuthException catch (e) {
       throw Exception('Failed to sign out: ${e.message}');
     } catch (e) {

@@ -145,14 +145,8 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                       tooltip: 'Open menu',
                     )
                   : null,
-              title: const Text('Community'),
+              title: const Text('Highwoods'),
               actions: [
-                if (isAuthenticated)
-                  IconButton(
-                    icon: const Icon(Icons.bookmark_outline_rounded),
-                    onPressed: () => context.push('/saved'),
-                    tooltip: 'Saved posts',
-                  ),
                 IconButton(
                   icon: const Icon(Icons.search_rounded),
                   onPressed: () => context.push('/search'),
@@ -192,6 +186,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                       child: _SortToggle(
                         sort: feedSort,
                         onChanged: (sort) => ref.read(feedSortProvider.notifier).setSort(sort),
+                        isAuthenticated: isAuthenticated,
                       ),
                     ),
                   ],
@@ -207,6 +202,7 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                     child: _EmptyState(
                       category: selectedCategory,
                       isFollowingMode: feedSort == FeedSort.following,
+                      isSavedMode: feedSort == FeedSort.saved,
                       onCreatePost: isAuthenticated
                           ? () => context.push(
                               '/create-post${selectedCategory != null ? '?category=${selectedCategory.dbValue}' : ''}')
@@ -291,11 +287,13 @@ class _EmptyState extends StatelessWidget {
     this.category,
     this.onCreatePost,
     this.isFollowingMode = false,
+    this.isSavedMode = false,
   });
 
   final PostCategory? category;
   final VoidCallback? onCreatePost;
   final bool isFollowingMode;
+  final bool isSavedMode;
 
   @override
   Widget build(BuildContext context) {
@@ -306,7 +304,11 @@ class _EmptyState extends StatelessWidget {
     final String subtitle;
     final IconData icon;
 
-    if (isFollowingMode) {
+    if (isSavedMode) {
+      icon = Icons.bookmark_outline_rounded;
+      title = 'No saved posts yet';
+      subtitle = 'Bookmark posts to see them here.';
+    } else if (isFollowingMode) {
       icon = Icons.people_outline_rounded;
       title = 'No posts from people you follow';
       subtitle = 'Follow people to see their posts here.';
@@ -344,7 +346,7 @@ class _EmptyState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            if (onCreatePost != null && !isFollowingMode) ...[
+            if (onCreatePost != null && !isFollowingMode && !isSavedMode) ...[
               SizedBox(height: tokens.spacingXl),
               FilledButton.icon(
                 onPressed: onCreatePost,
@@ -413,50 +415,57 @@ class _ErrorState extends StatelessWidget {
   }
 }
 
-/// Sort toggle between New, Active, and Following
+/// Sort toggle between New, Active, Following, and Saved
 class _SortToggle extends StatelessWidget {
   const _SortToggle({
     required this.sort,
     required this.onChanged,
+    this.isAuthenticated = false,
   });
 
   final FeedSort sort;
   final ValueChanged<FeedSort> onChanged;
+  final bool isAuthenticated;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final tokens = context.tokens;
 
-    return Row(
-      children: [
-        _SortChip(
-          label: 'New',
-          icon: Icons.schedule_rounded,
-          isSelected: sort == FeedSort.newest,
-          onTap: () => onChanged(FeedSort.newest),
-        ),
-        SizedBox(width: tokens.spacingSm),
-        _SortChip(
-          label: 'Active',
-          icon: Icons.local_fire_department_rounded,
-          isSelected: sort == FeedSort.active,
-          onTap: () => onChanged(FeedSort.active),
-        ),
-        SizedBox(width: tokens.spacingSm),
-        _SortChip(
-          label: 'Following',
-          icon: Icons.people_rounded,
-          isSelected: sort == FeedSort.following,
-          onTap: () => onChanged(FeedSort.following),
-        ),
-        const Spacer(),
-        Icon(
-          Icons.sort_rounded,
-          size: 18,
-          color: theme.colorScheme.onSurfaceVariant,
-        ),
-      ],
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _SortChip(
+            label: 'New',
+            icon: Icons.schedule_rounded,
+            isSelected: sort == FeedSort.newest,
+            onTap: () => onChanged(FeedSort.newest),
+          ),
+          SizedBox(width: tokens.spacingSm),
+          _SortChip(
+            label: 'Active',
+            icon: Icons.local_fire_department_rounded,
+            isSelected: sort == FeedSort.active,
+            onTap: () => onChanged(FeedSort.active),
+          ),
+          SizedBox(width: tokens.spacingSm),
+          _SortChip(
+            label: 'Following',
+            icon: Icons.people_rounded,
+            isSelected: sort == FeedSort.following,
+            onTap: () => onChanged(FeedSort.following),
+          ),
+          if (isAuthenticated) ...[
+            SizedBox(width: tokens.spacingSm),
+            _SortChip(
+              label: 'Saved',
+              icon: Icons.bookmark_outline_rounded,
+              isSelected: sort == FeedSort.saved,
+              onTap: () => onChanged(FeedSort.saved),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

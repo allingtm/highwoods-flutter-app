@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/connection.dart';
 import '../models/invitation.dart';
+import '../models/invite_quota.dart';
 import '../models/message.dart';
 import '../models/message_report.dart';
 import '../models/user_profile.dart';
@@ -426,6 +427,18 @@ class ConnectionsRepository {
       throw Exception('Failed to cancel invitation: ${e.message}');
     } catch (e) {
       throw Exception('Failed to cancel invitation: $e');
+    }
+  }
+
+  /// Gets the current user's invitation quota (limit, used, remaining)
+  Future<InviteQuota> getInviteQuota() async {
+    try {
+      final response = await _supabase.rpc('get_invitation_quota');
+      return InviteQuota.fromJson(response as Map<String, dynamic>);
+    } on PostgrestException catch (e) {
+      throw Exception('Failed to get invitation quota: ${e.message}');
+    } catch (e) {
+      throw Exception('Failed to get invitation quota: $e');
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../repositories/auth_repository.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
+import '../services/sentry_service.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository();
@@ -20,9 +21,11 @@ final currentUserProvider = Provider<User?>((ref) {
     orElse: () => null,
   );
 
-  // Tag user for push notifications when they log in
   if (user != null) {
     _tagUserForNotifications(user);
+    SentryService.setUser(id: user.id, email: user.email);
+  } else {
+    SentryService.clearUser();
   }
 
   return user;

@@ -1,5 +1,27 @@
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/sentry_service.dart';
+
+/// Reports an error to Sentry with context, then returns a user-friendly message.
+String handleError(Object error, StackTrace? stackTrace, {String? operation}) {
+  if (_shouldReport(error)) {
+    SentryService.captureError(
+      error,
+      stackTrace,
+      operation: operation,
+    );
+  }
+  return getErrorMessage(error);
+}
+
+/// Determines whether an error should be reported to Sentry
+bool _shouldReport(Object error) {
+  if (error is PurchasesErrorCode &&
+      error == PurchasesErrorCode.purchaseCancelledError) {
+    return false;
+  }
+  return true;
+}
 
 /// Converts error objects to user-friendly messages.
 ///

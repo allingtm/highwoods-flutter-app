@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Represents a direct upload URL from Cloudflare Stream
@@ -60,6 +61,7 @@ class StreamVideoInfo {
 /// Service for interacting with Cloudflare Stream via Supabase Edge Functions
 class CloudflareStreamService {
   final SupabaseClient _supabase = Supabase.instance.client;
+  final _httpClient = SentryHttpClient(client: http.Client());
 
   /// Create a Direct Creator Upload URL for uploading a video to Stream
   Future<StreamUploadUrl> createDirectUpload() async {
@@ -122,7 +124,7 @@ class CloudflareStreamService {
       await http.MultipartFile.fromPath('file', videoFile.path),
     );
 
-    final streamedResponse = await request.send();
+    final streamedResponse = await _httpClient.send(request);
     final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode != 200 && response.statusCode != 201) {

@@ -267,8 +267,8 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
         );
         context.pop();
       }
-    } catch (e) {
-      setState(() => _errorMessage = getErrorMessage(e));
+     } catch (e, stackTrace) {
+      setState(() => _errorMessage = handleError(e, stackTrace, operation: 'edit_post'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -310,8 +310,8 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
         );
         context.go('/feed');
       }
-    } catch (e) {
-      setState(() => _errorMessage = getErrorMessage(e));
+    } catch (e, stackTrace) {
+      setState(() => _errorMessage = handleError(e, stackTrace, operation: 'edit_post'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -356,8 +356,8 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
         );
         context.pop();
       }
-    } catch (e) {
-      setState(() => _errorMessage = getErrorMessage(e));
+    } catch (e, stackTrace) {
+      setState(() => _errorMessage = handleError(e, stackTrace, operation: 'edit_post'));
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
