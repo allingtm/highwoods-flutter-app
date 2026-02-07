@@ -269,12 +269,12 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
               label: Text('$_newPostsCount new'),
             ))
           : (isAuthenticated
-              ? _buildAnimatedFab(FloatingActionButton.extended(
+              ? _buildAnimatedFab(FloatingActionButton(
                   heroTag: null,
+                  shape: const CircleBorder(),
                   onPressed: () => context.push(
                       '/create-post${selectedCategory != null ? '?category=${selectedCategory.dbValue}' : ''}'),
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Post'),
+                  child: const Icon(Icons.add_rounded, size: 32),
                 ))
               : null),
     );

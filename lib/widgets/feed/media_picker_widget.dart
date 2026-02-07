@@ -225,13 +225,33 @@ class _MediaPickerWidgetState extends State<MediaPickerWidget> {
   }
 
   Widget _buildVideoPicker(AppThemeTokens tokens, ColorScheme colorScheme) {
-    if (widget.video == null) {
-      return _VideoEmptyState(onTap: _showVideoSourceSheet);
-    }
-
-    return _VideoPreview(
-      video: widget.video!,
-      onRemove: _removeVideo,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Video',
+              style: AppTypography.labelLarge,
+            ),
+            const Spacer(),
+            Text(
+              widget.video != null ? '1/1' : '0/1',
+              style: AppTypography.bodySmall.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: tokens.spacingSm),
+        if (widget.video == null)
+          _VideoEmptyState(onTap: _showVideoSourceSheet)
+        else
+          _VideoPreview(
+            video: widget.video!,
+            onRemove: _removeVideo,
+          ),
+      ],
     );
   }
 }
@@ -252,86 +272,27 @@ class _MediaTypeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ToggleChip(
-          label: 'Photos',
-          icon: Icons.photo_outlined,
-          isSelected: currentType == MediaType.photos,
-          onTap: onPhotosSelected,
+    return SegmentedButton<MediaType>(
+      segments: const [
+        ButtonSegment(
+          value: MediaType.photos,
+          label: Text('Photos'),
+          icon: Icon(Icons.photo_outlined),
         ),
-        SizedBox(width: tokens.spacingXs),
-        _ToggleChip(
-          label: 'Video',
-          icon: Icons.videocam_outlined,
-          isSelected: currentType == MediaType.video,
-          onTap: onVideoSelected,
+        ButtonSegment(
+          value: MediaType.video,
+          label: Text('Video'),
+          icon: Icon(Icons.videocam_outlined),
         ),
       ],
-    );
-  }
-}
-
-class _ToggleChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ToggleChip({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacingSm,
-          vertical: tokens.spacingXs,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? colorScheme.primary.withValues(alpha: 0.15)
-              : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(tokens.radiusSm),
-          border: isSelected
-              ? Border.all(color: colorScheme.primary, width: 1)
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isSelected
-                  ? colorScheme.primary
-                  : colorScheme.onSurfaceVariant,
-            ),
-            SizedBox(width: tokens.spacingXs),
-            Text(
-              label,
-              style: AppTypography.labelSmall.copyWith(
-                color: isSelected
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
-          ],
-        ),
-      ),
+      selected: {currentType},
+      onSelectionChanged: (selected) {
+        if (selected.first == MediaType.photos) {
+          onPhotosSelected();
+        } else {
+          onVideoSelected();
+        }
+      },
     );
   }
 }

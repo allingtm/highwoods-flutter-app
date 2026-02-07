@@ -261,14 +261,6 @@ class _ImagePickerWidgetState extends State<ImagePickerWidget> {
             ],
           ),
 
-        // Helper text
-        SizedBox(height: tokens.spacingXs),
-        Text(
-          'First image will be the cover photo. Drag to reorder.',
-          style: AppTypography.caption.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
       ],
     );
   }

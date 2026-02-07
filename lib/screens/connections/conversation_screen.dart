@@ -8,7 +8,6 @@ import '../../models/message_report.dart';
 import '../../models/user_profile.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/connections_provider.dart';
-import '../../providers/presence_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
 
@@ -100,29 +99,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     await markMessagesAsRead(ref, widget.otherUserId);
   }
 
-  Widget _buildOnlineStatus(BuildContext context, ColorScheme colorScheme) {
-    final isOnline = ref.watch(isUserOnlineProvider(widget.otherUserId));
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: isOnline ? Colors.green : colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Text(
-          isOnline ? 'Online' : 'Offline',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: isOnline ? Colors.green : colorScheme.onSurfaceVariant,
-              ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.tokens;
@@ -156,15 +132,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             ),
             SizedBox(width: tokens.spacingMd),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _otherUser?.fullName ?? 'Chat',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  _buildOnlineStatus(context, colorScheme),
-                ],
+              child: Text(
+                _otherUser?.fullName ?? 'Chat',
+                style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
           ],

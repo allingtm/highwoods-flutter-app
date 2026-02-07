@@ -21,6 +21,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
   final _messageController = TextEditingController();
   final _shareButtonKey = GlobalKey();
   bool _isLoading = false;
+  bool _hasConfirmedEligibility = false;
 
   @override
   void dispose() {
@@ -107,33 +108,34 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
             ),
             SizedBox(height: tokens.spacingLg),
 
-            // Info Box
+            // Eligibility Confirmation
             Container(
-              padding: EdgeInsets.all(tokens.spacingMd),
               decoration: BoxDecoration(
-                color: colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(tokens.radiusMd),
                 border: Border.all(
-                  color: colorScheme.tertiary.withValues(alpha: 0.5),
+                  color: colorScheme.primary.withValues(alpha: 0.5),
                 ),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: colorScheme.tertiary,
-                    size: tokens.iconSm,
-                  ),
-                  SizedBox(width: tokens.spacingMd),
-                  Expanded(
-                    child: Text(
-                      'Only invite people who live or work in Highwoods',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onTertiaryContainer,
-                          ),
-                    ),
-                  ),
-                ],
+              child: CheckboxListTile(
+                value: _hasConfirmedEligibility,
+                onChanged: (value) => setState(() {
+                  _hasConfirmedEligibility = value ?? false;
+                }),
+                checkColor: colorScheme.onPrimary,
+                activeColor: colorScheme.primary,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: Text(
+                  'I confirm this person lives, works, or has a connection to Highwoods',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onPrimaryContainer,
+                      ),
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacingSm,
+                  vertical: tokens.spacingXs,
+                ),
+                dense: true,
               ),
             ),
             SizedBox(height: tokens.spacingXl),
@@ -143,6 +145,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
               key: _shareButtonKey,
               onPressed: _isLoading ||
                       _recipientNameController.text.trim().isEmpty ||
+                      !_hasConfirmedEligibility ||
                       !(quotaAsync.valueOrNull?.hasRemaining ?? true)
                   ? null
                   : _shareInvitation,

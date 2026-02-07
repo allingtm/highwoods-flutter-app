@@ -107,8 +107,8 @@ class _PromoDetailScreenState extends ConsumerState<PromoDetailScreen> {
                         colorScheme,
                         Icons.star,
                         'Featured',
-                        colorScheme.tertiaryContainer,
-                        colorScheme.onTertiaryContainer,
+                        colorScheme.primaryContainer,
+                        colorScheme.onPrimaryContainer,
                       ),
                     _buildBadge(
                       context,

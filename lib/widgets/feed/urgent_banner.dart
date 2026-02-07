@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/feed/feed_models.dart';
+import '../../theme/app_color_palette.dart';
 import '../../theme/app_theme.dart';
 
 /// Sticky urgent alert banner displayed at the top of the feed
@@ -21,6 +22,7 @@ class UrgentBanner extends StatelessWidget {
 
     final tokens = context.tokens;
     final theme = Theme.of(context);
+    final palette = context.colors;
     final alert = alerts.first;
 
     // Determine color based on priority
@@ -38,8 +40,8 @@ class UrgentBanner extends StatelessWidget {
         foregroundColor = theme.colorScheme.onErrorContainer;
         break;
       case AlertPriority.medium:
-        backgroundColor = theme.colorScheme.tertiaryContainer;
-        foregroundColor = theme.colorScheme.onTertiaryContainer;
+        backgroundColor = palette.warningLight;
+        foregroundColor = palette.warningDark;
         break;
       case AlertPriority.low:
       case null:

@@ -367,7 +367,7 @@ class _PromoCard extends StatelessWidget {
                             vertical: tokens.spacingXs,
                           ),
                           decoration: BoxDecoration(
-                            color: colorScheme.tertiaryContainer,
+                            color: colorScheme.primaryContainer,
                             borderRadius: BorderRadius.circular(tokens.radiusSm),
                           ),
                           child: Row(
@@ -376,7 +376,7 @@ class _PromoCard extends StatelessWidget {
                               Icon(
                                 Icons.star,
                                 size: 12,
-                                color: colorScheme.onTertiaryContainer,
+                                color: colorScheme.onPrimaryContainer,
                               ),
                               SizedBox(width: tokens.spacingXs),
                               Text(
@@ -384,7 +384,7 @@ class _PromoCard extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: colorScheme.onTertiaryContainer,
+                                  color: colorScheme.onPrimaryContainer,
                                 ),
                               ),
                             ],

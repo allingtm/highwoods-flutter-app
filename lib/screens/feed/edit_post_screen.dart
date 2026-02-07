@@ -168,6 +168,8 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
                 // Content field
                 AppTextField.postContent(
                   controller: _contentController,
+                  label: post.postType.contentLabel,
+                  hint: post.postType.contentHint,
                   validator: PostValidators.body().call,
                   inputFormatters: [SanitizingTextInputFormatter()],
                 ),

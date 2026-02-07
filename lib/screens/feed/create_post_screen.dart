@@ -153,7 +153,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       case CreatePostStep.subCategorySelection:
         return 'Select Type';
       case CreatePostStep.postDetails:
-        return 'Post Details';
+        return _selectedPostType?.displayName ?? 'Post Details';
     }
   }
 
@@ -338,6 +338,8 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         // Content field
         AppTextField.postContent(
           controller: _contentController,
+          label: _selectedPostType!.contentLabel,
+          hint: _selectedPostType!.contentHint,
           validator: PostValidators.body().call,
           inputFormatters: [SanitizingTextInputFormatter()],
         ),

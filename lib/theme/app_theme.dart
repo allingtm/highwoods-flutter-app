@@ -93,6 +93,33 @@ class AppTheme {
         hintStyle: TextStyle(color: palette.textMuted),
       ),
 
+      // Segmented Button
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return palette.primary;
+            }
+            return palette.surfaceVariant;
+          }),
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return isDark ? Colors.black : Colors.white;
+            }
+            return palette.textSecondary;
+          }),
+          side: WidgetStateProperty.resolveWith((states) {
+            return BorderSide(color: palette.border);
+          }),
+          iconColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return isDark ? Colors.black : Colors.white;
+            }
+            return palette.textSecondary;
+          }),
+        ),
+      ),
+
       // Extensions
       extensions: <ThemeExtension<dynamic>>[
         palette,

@@ -119,6 +119,92 @@ enum PostType {
     }
   }
 
+  String get contentLabel {
+    switch (this) {
+      case PostType.forSale:
+        return 'What are you selling?';
+      case PostType.freeItem:
+        return 'What are you giving away?';
+      case PostType.wanted:
+        return 'What are you looking for?';
+      case PostType.borrowRent:
+        return 'What would you like to borrow?';
+      case PostType.recTrades:
+        return 'Who would you recommend?';
+      case PostType.recLifestyle:
+        return 'What would you recommend?';
+      case PostType.helpRequest:
+        return 'What do you need help with?';
+      case PostType.helpOffer:
+        return 'How can you help?';
+      case PostType.urgentAlert:
+        return "What's happening?";
+      case PostType.securityAlert:
+        return 'What have you noticed?';
+      case PostType.lostPet:
+        return 'Tell us about your pet';
+      case PostType.foundPet:
+        return 'Describe the pet you found';
+      case PostType.lostItem:
+        return 'What did you lose?';
+      case PostType.foundItem:
+        return 'What did you find?';
+      case PostType.event:
+        return 'Tell people about your event';
+      case PostType.hobbyPartner:
+        return 'What activity are you looking for?';
+      case PostType.discussion:
+        return "What's on your mind?";
+      case PostType.lookingForWork:
+        return 'Describe your skills';
+      case PostType.hiring:
+        return 'Describe the job';
+    }
+  }
+
+  String get contentHint {
+    switch (this) {
+      case PostType.forSale:
+        return 'Describe the item, its condition, and your asking price...';
+      case PostType.freeItem:
+        return 'Describe the item and any collection details...';
+      case PostType.wanted:
+        return "Describe the item you'd like to buy...";
+      case PostType.borrowRent:
+        return 'Describe what you need and for how long...';
+      case PostType.recTrades:
+        return "Share the tradesperson's details and your experience...";
+      case PostType.recLifestyle:
+        return "Tell us what you're recommending and why...";
+      case PostType.helpRequest:
+        return 'Describe what you need and when...';
+      case PostType.helpOffer:
+        return "Describe what you're offering and your availability...";
+      case PostType.urgentAlert:
+        return 'Describe the urgent issue and any actions to take...';
+      case PostType.securityAlert:
+        return 'Describe what you saw, when, and where...';
+      case PostType.lostPet:
+        return 'Describe your pet, where they were last seen, and any distinguishing features...';
+      case PostType.foundPet:
+        return 'Include what the pet looks like, where you found it, and where it is now...';
+      case PostType.lostItem:
+        return 'Describe the item and where you think you lost it...';
+      case PostType.foundItem:
+        return 'Describe the item and where you found it...';
+      case PostType.event:
+        return "Describe what's happening, who it's for, and anything people should bring...";
+      case PostType.hobbyPartner:
+        return "Describe the activity, when you'd like to do it, and any experience needed...";
+      case PostType.discussion:
+        return 'Start a conversation with your neighbours...';
+      case PostType.lookingForWork:
+        return 'Share what work you can do, your experience, and availability...';
+      case PostType.hiring:
+        return 'Share what needs doing, when, and any skills required...';
+    }
+  }
+
   String get dbValue {
     switch (this) {
       case PostType.forSale:
