@@ -18,6 +18,7 @@ import '../../screens/feed/edit_post_screen.dart';
 import '../../screens/feed/search_screen.dart';
 import '../../screens/feed/saved_posts_screen.dart';
 import '../../screens/connections/invite_screen.dart';
+import '../../screens/connections/accept_invite_screen.dart';
 import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
 import '../../screens/directory/promo_detail_screen.dart';
@@ -112,16 +113,28 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return RegisterScreen(inviteCode: inviteCode);
         },
       ),
-      // Invite deep link - redirect to register with code
+      // Invite deep link - route based on auth state
       GoRoute(
         path: '/invite/:token',
         name: 'invite-link',
         redirect: (context, state) {
           final token = state.pathParameters['token'];
           final code = state.uri.queryParameters['code'];
-          // Prefer the short code if available, otherwise use the token
           final inviteCode = code ?? token;
+          // Authenticated users accept the invite; others register with it
+          if (isAuthenticated) {
+            return '/accept-invite?code=$inviteCode';
+          }
           return '/register?code=$inviteCode';
+        },
+      ),
+      // Accept invite - for authenticated users accepting an invitation
+      GoRoute(
+        path: '/accept-invite',
+        name: 'accept-invite',
+        builder: (context, state) {
+          final code = state.uri.queryParameters['code'];
+          return AcceptInviteScreen(code: code ?? '');
         },
       ),
       GoRoute(

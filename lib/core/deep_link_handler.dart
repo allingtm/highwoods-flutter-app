@@ -110,7 +110,13 @@ class DeepLinkHandler {
               final token = pathSegments[1];
               final code = uri.queryParameters['code'];
               final inviteCode = code ?? token;
-              _router.go('/register?code=$inviteCode');
+              // Authenticated users accept the invite; others register with it
+              final currentUser = Supabase.instance.client.auth.currentUser;
+              if (currentUser != null) {
+                _router.go('/accept-invite?code=$inviteCode');
+              } else {
+                _router.go('/register?code=$inviteCode');
+              }
             }
             break;
 

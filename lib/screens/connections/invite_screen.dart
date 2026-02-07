@@ -468,21 +468,23 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
     String inviterName,
   ) {
     final buffer = StringBuffer();
-    buffer.writeln('Hey! $inviterName has invited you to connect on the Highwoods community app.');
+    buffer.writeln('$inviterName has invited you to join the Highwoods community app!');
     buffer.writeln();
 
     if (personalMessage != null && personalMessage.isNotEmpty) {
-      buffer.writeln(personalMessage);
+      buffer.writeln('"$personalMessage"');
       buffer.writeln();
     }
 
-    buffer.writeln('Already a member? Search for "$inviterName" in the app and send a connection request.');
+    buffer.writeln('Already a member?');
+    buffer.writeln('Tap the link below to connect with $inviterName:');
+    buffer.writeln(inviteLink);
     buffer.writeln();
-    buffer.writeln('New to Highwoods? Download the app and use the invite code below to register:');
-    buffer.writeln('Download: https://highwoods.app/download');
 
+    buffer.writeln('Not a member yet?');
+    buffer.writeln('Visit https://highwoods.co.uk for instructions to download the app. Once installed, tap the link above or enter this invite code to register:');
     if (code != null) {
-      buffer.writeln('Invite code: $code');
+      buffer.writeln(code);
     }
 
     return buffer.toString();
