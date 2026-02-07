@@ -138,14 +138,9 @@ class DeepLinkHandler {
             _router.go('/home?tab=2');
             break;
 
-          case 'directory':
-            // Directory: /directory/promo/{promoId}
-            if (pathSegments.length >= 3 && pathSegments[1] == 'promo') {
-              final promoId = pathSegments[2];
-              _router.go('/directory/promo/$promoId');
-            } else {
-              _router.go('/home?tab=1');
-            }
+          case 'dashboard':
+            // Dashboard tab
+            _router.go('/home?tab=1');
             break;
 
           case 'feed':

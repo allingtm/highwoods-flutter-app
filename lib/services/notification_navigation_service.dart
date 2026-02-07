@@ -324,7 +324,7 @@ class NotificationNavigationService extends ChangeNotifier {
         targetRoute: '/home?tab=0',
       );
     }
-    if (normalizedPath == '/directory' || normalizedPath.startsWith('/directory/')) {
+    if (normalizedPath == '/dashboard') {
       return NotificationRoute(
         parentRoute: '/home?tab=1',
         targetRoute: '/home?tab=1',

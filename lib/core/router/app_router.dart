@@ -21,7 +21,6 @@ import '../../screens/connections/invite_screen.dart';
 import '../../screens/connections/accept_invite_screen.dart';
 import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
-import '../../screens/directory/promo_detail_screen.dart';
 import '../../screens/settings/appearance_screen.dart';
 import '../../screens/settings/notifications_screen.dart';
 import '../../screens/settings/privacy_screen.dart';
@@ -281,15 +280,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             otherUserId: userId,
             fromNotification: fromNotification,
           );
-        },
-      ),
-      // Directory routes
-      GoRoute(
-        path: '/directory/promo/:promoId',
-        name: 'promo-detail',
-        builder: (context, state) {
-          final promoId = state.pathParameters['promoId']!;
-          return PromoDetailScreen(promoId: promoId);
         },
       ),
     ],
