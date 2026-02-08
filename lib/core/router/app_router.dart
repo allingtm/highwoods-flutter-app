@@ -21,6 +21,7 @@ import '../../screens/connections/invite_screen.dart';
 import '../../screens/connections/accept_invite_screen.dart';
 import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
+import '../../screens/dashboard_screen.dart';
 import '../../screens/settings/appearance_screen.dart';
 import '../../screens/settings/notifications_screen.dart';
 import '../../screens/settings/privacy_screen.dart';
@@ -217,6 +218,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final hideMessageButton = state.uri.queryParameters['fromConversation'] == 'true';
           return UserProfileScreen(userId: userId, hideMessageButton: hideMessageButton);
         },
+      ),
+      GoRoute(
+        path: '/stats',
+        name: 'stats',
+        builder: (context, state) => const DashboardScreen(),
       ),
       GoRoute(
         path: '/appearance',

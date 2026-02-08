@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../models/post_category.dart';
 import '../providers/auth_provider.dart';
 import '../providers/connections_provider.dart';
 import '../providers/feed_provider.dart';
@@ -10,7 +9,7 @@ import '../providers/realtime_status_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../theme/app_theme_tokens.dart';
 import 'feed/feed_screen.dart';
-import 'dashboard_screen.dart';
+import 'groups_screen.dart';
 import 'connections_screen.dart';
 import 'connections/messages_list_screen.dart';
 
@@ -71,14 +70,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _scaffoldKey.currentState?.openDrawer();
   }
 
-  void _navigateToFeedCategory(PostCategory category) {
-    ref.read(selectedCategoryProvider.notifier).state = category;
-    setState(() {
-      _selectedIndex = 0;
-      _showBottomNav = true;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
@@ -102,10 +93,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   }
                 },
               ),
-              DashboardScreen(
-                onMenuTap: _openDrawer,
-                onCategoryTap: _navigateToFeedCategory,
-              ),
+              GroupsScreen(onMenuTap: _openDrawer),
               MessagesListScreen(onMenuTap: _openDrawer),
               ConnectionsScreen(onMenuTap: _openDrawer),
             ],
@@ -316,6 +304,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     context.push('/about');
                   },
                 ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.bar_chart_outlined,
+                  label: 'Stats',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/stats');
+                  },
+                ),
                 const Divider(),
                 _buildDrawerItem(
                   context,
@@ -435,7 +432,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildNavItem(context, icon: Icons.forum_outlined, selectedIcon: Icons.forum, label: 'Social', index: 0),
-            _buildNavItem(context, icon: Icons.dashboard_outlined, selectedIcon: Icons.dashboard, label: 'Dashboard', index: 1),
+            _buildNavItem(context, icon: Icons.groups_outlined, selectedIcon: Icons.groups, label: 'Groups', index: 1),
             _buildNavItem(context, icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble, label: 'Messages', index: 2),
             _buildNavItem(context, icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Network', index: 3),
           ],

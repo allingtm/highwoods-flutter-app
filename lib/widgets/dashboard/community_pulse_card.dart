@@ -6,7 +6,7 @@ import '../../theme/app_color_palette.dart';
 import '../../theme/app_theme.dart';
 import '../common/app_card.dart';
 
-/// Community pulse card showing active users, post trends, mood ring, and sparkline.
+/// Community pulse card showing active users, post trends, and sparkline.
 class CommunityPulseCard extends StatelessWidget {
   const CommunityPulseCard({super.key, required this.stats});
 
@@ -61,19 +61,6 @@ class CommunityPulseCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Right: Mood ring
-              if (stats.moodToday.total > 0)
-                SizedBox(
-                  width: 90,
-                  height: 90,
-                  child: _MoodRing(
-                    mood: stats.moodToday,
-                    successColor: colors.success,
-                    warningColor: colors.warning,
-                    secondaryColor: colors.secondary,
-                    trackColor: colorScheme.surfaceContainerHighest,
-                  ),
-                ),
             ],
           ),
           SizedBox(height: tokens.spacingMd),
@@ -197,64 +184,6 @@ class _TrendIndicator extends StatelessWidget {
       ],
     );
   }
-}
-
-// ============================================================
-// Mood Ring (Syncfusion Radial Bar)
-// ============================================================
-
-class _MoodRing extends StatelessWidget {
-  final MoodCounts mood;
-  final Color successColor;
-  final Color warningColor;
-  final Color secondaryColor;
-  final Color trackColor;
-
-  const _MoodRing({
-    required this.mood,
-    required this.successColor,
-    required this.warningColor,
-    required this.secondaryColor,
-    required this.trackColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final total = mood.total;
-    if (total == 0) return const SizedBox.shrink();
-
-    final data = <_MoodData>[
-      _MoodData('Buzzing', mood.buzzing / total * 100, successColor),
-      _MoodData('Ticking', mood.tickingAlong / total * 100, warningColor),
-      _MoodData('Quiet', mood.quiet / total * 100, secondaryColor),
-    ];
-
-    return SfCircularChart(
-      margin: EdgeInsets.zero,
-      series: <RadialBarSeries<_MoodData, String>>[
-        RadialBarSeries<_MoodData, String>(
-          dataSource: data,
-          xValueMapper: (d, _) => d.label,
-          yValueMapper: (d, _) => d.percentage,
-          pointColorMapper: (d, _) => d.color,
-          cornerStyle: CornerStyle.bothCurve,
-          radius: '100%',
-          innerRadius: '55%',
-          gap: '4%',
-          trackColor: trackColor,
-          maximumValue: 100,
-          animationDuration: 800,
-        ),
-      ],
-    );
-  }
-}
-
-class _MoodData {
-  final String label;
-  final double percentage;
-  final Color color;
-  _MoodData(this.label, this.percentage, this.color);
 }
 
 // ============================================================
