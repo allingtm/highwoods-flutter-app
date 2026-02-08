@@ -334,6 +334,7 @@ class FeedRepository {
     LostFoundDetails? lostFoundDetails,
     JobDetails? jobDetails,
     RecommendationDetails? recommendationDetails,
+    String? groupId,
   }) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
@@ -351,6 +352,7 @@ class FeedRepository {
             if (title != null) 'title': title,
             'body': content,
             'status': 'active',
+            if (groupId != null) 'group_id': groupId,
           })
           .select()
           .single();

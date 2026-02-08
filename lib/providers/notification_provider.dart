@@ -10,6 +10,7 @@ class NotificationPreferences {
   final bool connections;
   final bool events;
   final bool safetyAlerts;
+  final bool groups;
 
   const NotificationPreferences({
     this.posts = true,
@@ -18,6 +19,7 @@ class NotificationPreferences {
     this.connections = true,
     this.events = true,
     this.safetyAlerts = true,
+    this.groups = true,
   });
 
   NotificationPreferences copyWith({
@@ -27,6 +29,7 @@ class NotificationPreferences {
     bool? connections,
     bool? events,
     bool? safetyAlerts,
+    bool? groups,
   }) {
     return NotificationPreferences(
       posts: posts ?? this.posts,
@@ -35,6 +38,7 @@ class NotificationPreferences {
       connections: connections ?? this.connections,
       events: events ?? this.events,
       safetyAlerts: safetyAlerts ?? this.safetyAlerts,
+      groups: groups ?? this.groups,
     );
   }
 }
@@ -52,6 +56,7 @@ class NotificationPreferencesNotifier
   static const _keyConnections = 'notify_connections';
   static const _keyEvents = 'notify_events';
   static const _keySafety = 'notify_safety';
+  static const _keyGroups = 'notify_groups';
 
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
@@ -62,6 +67,7 @@ class NotificationPreferencesNotifier
       connections: prefs.getBool(_keyConnections) ?? true,
       events: prefs.getBool(_keyEvents) ?? true,
       safetyAlerts: prefs.getBool(_keySafety) ?? true,
+      groups: prefs.getBool(_keyGroups) ?? true,
     );
     _syncToOneSignal();
   }
@@ -74,6 +80,7 @@ class NotificationPreferencesNotifier
     await prefs.setBool(_keyConnections, state.connections);
     await prefs.setBool(_keyEvents, state.events);
     await prefs.setBool(_keySafety, state.safetyAlerts);
+    await prefs.setBool(_keyGroups, state.groups);
     _syncToOneSignal();
   }
 
@@ -85,6 +92,7 @@ class NotificationPreferencesNotifier
       connections: state.connections,
       events: state.events,
       safetyAlerts: state.safetyAlerts,
+      groups: state.groups,
     );
   }
 
@@ -115,6 +123,11 @@ class NotificationPreferencesNotifier
 
   void toggleSafetyAlerts(bool value) {
     state = state.copyWith(safetyAlerts: value);
+    _saveAndSync();
+  }
+
+  void toggleGroups(bool value) {
+    state = state.copyWith(groups: value);
     _saveAndSync();
   }
 }

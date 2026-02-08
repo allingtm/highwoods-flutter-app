@@ -11,6 +11,8 @@ import '../../screens/profile_screen.dart';
 import '../../screens/edit_profile_screen.dart';
 import '../../screens/user_profile_screen.dart';
 import '../../screens/auth/auth_callback_screen.dart';
+import '../../screens/auth/forgot_password_screen.dart';
+import '../../screens/auth/reset_password_screen.dart';
 import '../../screens/feed/feed_screen.dart';
 import '../../screens/feed/post_detail_screen.dart';
 import '../../screens/feed/create_post_screen.dart';
@@ -22,6 +24,11 @@ import '../../screens/connections/accept_invite_screen.dart';
 import '../../screens/connections/messages_list_screen.dart';
 import '../../screens/connections/conversation_screen.dart';
 import '../../screens/dashboard_screen.dart';
+import '../../screens/groups/group_detail_screen.dart';
+import '../../screens/groups/group_members_screen.dart';
+import '../../screens/groups/group_settings_screen.dart';
+import '../../screens/groups/group_join_requests_screen.dart';
+import '../../screens/groups/create_group_screen.dart';
 import '../../screens/settings/appearance_screen.dart';
 import '../../screens/settings/notifications_screen.dart';
 import '../../screens/settings/privacy_screen.dart';
@@ -56,6 +63,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       final isGoingToAuth = location == '/login' ||
           location.startsWith('/register') ||
+          location == '/forgot-password' ||
           location == '/';
       final isAuthCallback = location.startsWith('/auth/');
       final isInviteLink = location.startsWith('/invite/');
@@ -117,6 +125,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final inviteCode = state.uri.queryParameters['code'];
           return RegisterScreen(inviteCode: inviteCode);
         },
+      ),
+      GoRoute(
+        path: '/forgot-password',
+        name: 'forgot-password',
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
       // Invite deep link - route based on auth state
       GoRoute(
@@ -187,8 +200,51 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final category = categoryStr != null
               ? PostCategory.fromString(categoryStr)
               : null;
-          return CreatePostScreen(initialCategory: category);
+          // Read optional groupId query parameter (for group posts)
+          final groupId = state.uri.queryParameters['groupId'];
+          return CreatePostScreen(
+            initialCategory: category,
+            groupId: groupId,
+          );
         },
+      ),
+      // Group routes
+      GoRoute(
+        path: '/group/:groupId',
+        name: 'group-detail',
+        builder: (context, state) {
+          final groupId = state.pathParameters['groupId']!;
+          return GroupDetailScreen(groupId: groupId);
+        },
+      ),
+      GoRoute(
+        path: '/group/:groupId/members',
+        name: 'group-members',
+        builder: (context, state) {
+          final groupId = state.pathParameters['groupId']!;
+          return GroupMembersScreen(groupId: groupId);
+        },
+      ),
+      GoRoute(
+        path: '/group/:groupId/settings',
+        name: 'group-settings',
+        builder: (context, state) {
+          final groupId = state.pathParameters['groupId']!;
+          return GroupSettingsScreen(groupId: groupId);
+        },
+      ),
+      GoRoute(
+        path: '/group/:groupId/requests',
+        name: 'group-requests',
+        builder: (context, state) {
+          final groupId = state.pathParameters['groupId']!;
+          return GroupJoinRequestsScreen(groupId: groupId);
+        },
+      ),
+      GoRoute(
+        path: '/create-group',
+        name: 'create-group',
+        builder: (context, state) => const CreateGroupScreen(),
       ),
       GoRoute(
         path: '/search',
@@ -258,6 +314,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/auth/confirm',
         name: 'auth-confirm',
         builder: (context, state) => const AuthCallbackScreen(type: 'confirm'),
+      ),
+      GoRoute(
+        path: '/auth/reset-password',
+        name: 'auth-reset-password',
+        builder: (context, state) => const ResetPasswordScreen(),
       ),
       GoRoute(
         path: '/auth/magic-link',

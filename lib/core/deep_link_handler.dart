@@ -86,7 +86,7 @@ class DeepLinkHandler {
             // Auth callback routes: /auth/confirm, /auth/magic-link
             if (pathSegments.length >= 2) {
               final authType = pathSegments[1];
-              if (authType == 'confirm' || authType == 'magic-link') {
+              if (authType == 'confirm' || authType == 'magic-link' || authType == 'reset-password') {
                 _router.go('/auth/$authType');
               } else if (authType == 'callback') {
                 await _handleAuthCallback(uri);

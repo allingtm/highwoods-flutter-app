@@ -158,7 +158,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           post: post,
                           onReactionTap: () => showReactionPicker(context: context, ref: ref, post: post),
                           onCommentTap: () => _commentFocusNode.requestFocus(),
-                          onSaveTap: () => handleSavePost(context: context, ref: ref, post: post),
+                          onSaveTap: post.isGroupPost ? null : () => handleSavePost(context: context, ref: ref, post: post),
                           showMessageButton: shouldShowMessageButton(
                             post: post,
                             currentUserId: currentUser?.id,

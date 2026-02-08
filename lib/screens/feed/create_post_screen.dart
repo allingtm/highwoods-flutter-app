@@ -6,6 +6,7 @@ import '../../models/post_category.dart';
 import '../../models/post_type.dart';
 import '../../models/feed/feed_models.dart';
 import '../../providers/feed_provider.dart';
+import '../../providers/groups_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
 import '../../utils/error_utils.dart';
@@ -24,10 +25,13 @@ enum CreatePostStep {
 
 /// Screen for creating a new community post
 class CreatePostScreen extends ConsumerStatefulWidget {
-  const CreatePostScreen({super.key, this.initialCategory});
+  const CreatePostScreen({super.key, this.initialCategory, this.groupId});
 
   /// Optional initial category to pre-select (e.g., when coming from filtered feed)
   final PostCategory? initialCategory;
+
+  /// Optional group ID when creating a post within a group
+  final String? groupId;
 
   @override
   ConsumerState<CreatePostScreen> createState() => _CreatePostScreenState();
@@ -88,8 +92,14 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-select category if provided (e.g., from filtered feed)
-    if (widget.initialCategory != null) {
+    if (widget.groupId != null) {
+      // Group posts are always discussions - skip category/type selection
+      _selectedCategory = PostCategory.discussion;
+      _selectedPostType = PostType.discussion;
+      _isDiscussionFlow = true;
+      _currentStep = CreatePostStep.postDetails;
+    } else if (widget.initialCategory != null) {
+      // Pre-select category if provided (e.g., from filtered feed)
       _selectedCategory = widget.initialCategory;
       _currentStep = CreatePostStep.subCategorySelection;
     }
@@ -130,7 +140,11 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     setState(() {
       _errorMessage = null;
       if (_currentStep == CreatePostStep.postDetails) {
-        if (_isDiscussionFlow) {
+        if (widget.groupId != null) {
+          // Group posts go straight to details - back means close
+          context.pop();
+          return;
+        } else if (_isDiscussionFlow) {
           _currentStep = CreatePostStep.categorySelection;
           _selectedCategory = null;
           _selectedPostType = null;
@@ -147,6 +161,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
   }
 
   String _getStepTitle() {
+    if (widget.groupId != null) return 'New Group Post';
     switch (_currentStep) {
       case CreatePostStep.categorySelection:
         return 'Create Post';
@@ -183,11 +198,11 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         title: Text(_getStepTitle()),
         leading: IconButton(
           icon: Icon(
-            _currentStep == CreatePostStep.categorySelection
+            _currentStep == CreatePostStep.categorySelection || widget.groupId != null
                 ? Icons.close_rounded
                 : Icons.arrow_back_rounded,
           ),
-          onPressed: _currentStep == CreatePostStep.categorySelection
+          onPressed: _currentStep == CreatePostStep.categorySelection || widget.groupId != null
               ? () => context.pop()
               : _goBack,
         ),
@@ -282,6 +297,38 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       key: const ValueKey('postDetails'),
       padding: EdgeInsets.all(tokens.spacingLg),
       children: [
+        // Group context banner
+        if (widget.groupId != null) ...[
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacingMd,
+              vertical: tokens.spacingSm,
+            ),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.groups_outlined,
+                  size: 18,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+                SizedBox(width: tokens.spacingSm),
+                Text(
+                  'Posting to group',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: tokens.spacingMd),
+        ],
+
         // Error message
         if (_errorMessage != null) ...[
           Container(
@@ -580,9 +627,17 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
         imageFiles: imageFiles.isNotEmpty ? imageFiles : null,
         videoFile: _selectedVideo?.file,
         videoDurationSeconds: _selectedVideo?.durationSeconds,
+        groupId: widget.groupId,
       );
 
       if (mounted) {
+        // Refresh group data if this was a group post
+        if (widget.groupId != null) {
+          ref.invalidate(groupFeedProvider(widget.groupId!));
+          ref.invalidate(groupDetailProvider(widget.groupId!));
+          ref.invalidate(allGroupsProvider);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Post created successfully!'),

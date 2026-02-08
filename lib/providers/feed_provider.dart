@@ -591,6 +591,7 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
     List<File>? imageFiles,
     File? videoFile,
     int? videoDurationSeconds,
+    String? groupId,
   }) async {
     final stopwatch = Stopwatch()..start();
     final transaction = SentryService.startTransaction('post.create', 'task');
@@ -609,6 +610,7 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
         lostFoundDetails: lostFoundDetails,
         jobDetails: jobDetails,
         recommendationDetails: recommendationDetails,
+        groupId: groupId,
       );
       await postSpan.finish(status: const SpanStatus.ok());
 
@@ -652,8 +654,10 @@ class FeedActionsNotifier extends StateNotifier<AsyncValue<void>> {
         );
       }
 
-      // Add to feed
-      _ref.read(feedPostsNotifierProvider.notifier).prependPost(postWithMedia);
+      // Add to feed (only main feed posts, not group posts)
+      if (groupId == null) {
+        _ref.read(feedPostsNotifierProvider.notifier).prependPost(postWithMedia);
+      }
 
       // Invalidate user posts
       _ref.invalidate(userPostsProvider);

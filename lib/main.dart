@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -74,9 +76,29 @@ class _MainAppState extends ConsumerState<MainApp> {
   /// Deep link handler for app links
   DeepLinkHandler? _deepLinkHandler;
 
+  /// Listens for passwordRecovery events from the SDK's automatic deep link
+  /// handling. The supabase_flutter SDK intercepts auth deep links via
+  /// app_links and calls getSessionFromUrl() internally, firing the
+  /// passwordRecovery event. This global listener catches it and navigates
+  /// to the reset password screen.
+  StreamSubscription<AuthState>? _authRecoverySubscription;
+
   @override
   void initState() {
     super.initState();
+
+    // Listen for password recovery events globally.
+    // Must be set up early (before the SDK processes the deep link) so we
+    // catch the passwordRecovery event that fires during code exchange.
+    _authRecoverySubscription =
+        Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+      if (state.event == AuthChangeEvent.passwordRecovery) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(goRouterProvider).go('/auth/reset-password');
+        });
+      }
+    });
+
     // Listen for foreground notifications to show as snackbar
     NotificationNavigationService.instance
         .addListener(_onForegroundNotification);
@@ -89,6 +111,7 @@ class _MainAppState extends ConsumerState<MainApp> {
 
   @override
   void dispose() {
+    _authRecoverySubscription?.cancel();
     NotificationNavigationService.instance
         .removeListener(_onForegroundNotification);
     _deepLinkHandler?.dispose();

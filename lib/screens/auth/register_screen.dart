@@ -5,6 +5,7 @@ import 'package:form_field_validator/form_field_validator.dart';
 import '../../models/invitation.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/connections_repository.dart';
+import '../../services/notification_service.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_theme_tokens.dart';
 import '../../utils/error_utils.dart';
@@ -25,12 +26,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _codeController = TextEditingController();
   final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
-  bool _magicLinkSent = false;
   String? _errorMessage;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   // Invite validation state
   bool _isCodeValidated = false;
@@ -52,8 +57,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   void dispose() {
     _codeController.dispose();
     _emailController.dispose();
+    _usernameController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -96,7 +104,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
-  Future<void> _sendMagicLink() async {
+  Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -107,22 +115,56 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     try {
       final authRepository = ref.read(authRepositoryProvider);
 
-      // Send magic link with profile data
-      await authRepository.sendOTP(
+      // Check username availability
+      final username = _usernameController.text.trim().toLowerCase();
+      final isAvailable = await authRepository.isUsernameAvailable(username);
+      if (!isAvailable) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Username "$username" is already taken';
+        });
+        return;
+      }
+
+      // Create auth account
+      final response = await authRepository.signUpWithPassword(
         email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      final user = response.user;
+      if (user == null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to create account. Please try again.';
+        });
+        return;
+      }
+
+      // Create profile
+      await authRepository.createUserProfile(
+        userId: user.id,
+        email: user.email ?? _emailController.text.trim(),
+        username: username,
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
       );
 
-      setState(() {
-        _magicLinkSent = true;
-        _isLoading = false;
-      });
+      if (mounted) {
+        // Request notification permission for new users
+        await NotificationService.requestPermissionWithRationale(context);
+
+        if (mounted) {
+          context.go('/home');
+        }
+      }
     } catch (e, stackTrace) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = handleError(e, stackTrace, operation: 'register_send_link');
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = handleError(e, stackTrace, operation: 'register_sign_up');
+        });
+      }
     }
   }
 
@@ -176,11 +218,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                       // Title based on current step
                       Text(
-                        _magicLinkSent
-                            ? 'Check your inbox'
-                            : _isCodeValidated
-                                ? 'Create your account'
-                                : 'Join the community',
+                        _isCodeValidated
+                            ? 'Create your account'
+                            : 'Join the community',
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -188,11 +228,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                       SizedBox(height: tokens.spacingSm),
                       Text(
-                        _magicLinkSent
-                            ? 'We sent a magic link to verify your email'
-                            : _isCodeValidated
-                                ? 'Complete your profile to get started'
-                                : 'Enter your invitation code to register',
+                        _isCodeValidated
+                            ? 'Complete your profile to get started'
+                            : 'Enter your invitation code to register',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -203,12 +241,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       if (!_isCodeValidated) ...[
                         // Step 1: Invite code validation
                         _buildCodeEntryStep(tokens, theme),
-                      ] else if (!_magicLinkSent) ...[
+                      ] else ...[
                         // Step 2: Registration form
                         _buildRegistrationStep(tokens, theme),
-                      ] else ...[
-                        // Step 3: Magic link sent confirmation
-                        _buildMagicLinkSentStep(tokens, theme),
                       ],
 
                       SizedBox(height: tokens.spacing2xl),
@@ -431,6 +466,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ]).call,
         ),
         SizedBox(height: tokens.spacingLg),
+        AppTextField.username(
+          controller: _usernameController,
+          validator: MultiValidator([
+            RequiredValidator(errorText: 'Username is required'),
+            MinLengthValidator(3, errorText: 'Username must be at least 3 characters'),
+            MaxLengthValidator(30, errorText: 'Username must be at most 30 characters'),
+            PatternValidator(r'^[a-zA-Z0-9_]+$',
+                errorText: 'Username can only contain letters, numbers, and underscores'),
+          ]).call,
+        ),
+        SizedBox(height: tokens.spacingLg),
         AppTextField.name(
           controller: _firstNameController,
           label: 'First Name',
@@ -456,52 +502,63 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 errorText: 'Last name can only contain letters, spaces, and hyphens'),
           ]).call,
         ),
+        SizedBox(height: tokens.spacingLg),
+        AppTextField.password(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscurePassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+            ),
+            onPressed: () {
+              setState(() {
+                _obscurePassword = !_obscurePassword;
+              });
+            },
+          ),
+          validator: MultiValidator([
+            RequiredValidator(errorText: 'Password is required'),
+            MinLengthValidator(8, errorText: 'Password must be at least 8 characters'),
+          ]).call,
+        ),
+        SizedBox(height: tokens.spacingLg),
+        AppTextField.password(
+          controller: _confirmPasswordController,
+          label: 'Confirm Password',
+          obscureText: _obscureConfirmPassword,
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureConfirmPassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+            ),
+            onPressed: () {
+              setState(() {
+                _obscureConfirmPassword = !_obscureConfirmPassword;
+              });
+            },
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please confirm your password';
+            }
+            if (value != _passwordController.text) {
+              return 'Passwords do not match';
+            }
+            return null;
+          },
+        ),
         if (_errorMessage != null) ...[
           SizedBox(height: tokens.spacingLg),
           AppErrorContainer(message: _errorMessage!),
         ],
         SizedBox(height: tokens.spacingXl),
         AppButton(
-          text: 'Send Magic Link',
-          onPressed: _sendMagicLink,
+          text: 'Create Account',
+          onPressed: _signUp,
           isLoading: _isLoading,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMagicLinkSentStep(AppThemeTokens tokens, ThemeData theme) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Icon(
-          Icons.mark_email_read_outlined,
-          size: tokens.iconXl,
-          color: theme.colorScheme.primary,
-        ),
-        SizedBox(height: tokens.spacingXl),
-        Text(
-          _emailController.text.trim(),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        SizedBox(height: tokens.spacingXl),
-        AppInfoContainer(
-          icon: Icons.touch_app_rounded,
-          child: const Text('Tap the link in your email to create your account'),
-        ),
-        SizedBox(height: tokens.spacingXl),
-        AppButton(
-          text: 'Use a different email',
-          variant: AppButtonVariant.outline,
-          onPressed: () {
-            setState(() {
-              _magicLinkSent = false;
-              _errorMessage = null;
-            });
-          },
         ),
       ],
     );

@@ -276,6 +276,25 @@ class NotificationNavigationService extends ChangeNotifier {
           targetRoute: '/home?tab=3',
         );
 
+      case 'group_join_approved':
+        if (targetId != null) {
+          return NotificationRoute(
+            parentRoute: '/home?tab=1', // Groups tab
+            targetRoute: '/group/$targetId?fromNotification=true',
+          );
+        }
+        return NotificationRoute(
+          parentRoute: '/home?tab=1',
+          targetRoute: '/home?tab=1',
+        );
+
+      case 'group_join_rejected':
+      case 'group_member_removed':
+        return NotificationRoute(
+          parentRoute: '/home?tab=1',
+          targetRoute: '/home?tab=1',
+        );
+
       default:
         debugPrint('NotificationNavigationService: Unknown notification type: $type');
         return NotificationRoute(
@@ -305,6 +324,17 @@ class NotificationNavigationService extends ChangeNotifier {
       );
     }
 
+    // Groups - direct navigation with Groups tab as parent
+    if (normalizedPath.startsWith('/group/')) {
+      final targetPath = normalizedPath.contains('?')
+          ? '$normalizedPath&fromNotification=true'
+          : '$normalizedPath?fromNotification=true';
+      return NotificationRoute(
+        parentRoute: '/home?tab=1', // Groups tab
+        targetRoute: targetPath,
+      );
+    }
+
     // Conversations - direct navigation with Messages as parent
     if (normalizedPath.startsWith('/connections/conversation/')) {
       // Add fromNotification param if not already present
@@ -324,7 +354,7 @@ class NotificationNavigationService extends ChangeNotifier {
         targetRoute: '/home?tab=0',
       );
     }
-    if (normalizedPath == '/dashboard') {
+    if (normalizedPath == '/groups' || normalizedPath == '/dashboard') {
       return NotificationRoute(
         parentRoute: '/home?tab=1',
         targetRoute: '/home?tab=1',

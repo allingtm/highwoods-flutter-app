@@ -123,6 +123,7 @@ class NotificationService {
     bool connections = true,
     bool events = true,
     bool safetyAlerts = true,
+    bool groups = true,
   }) {
     OneSignal.User.addTags({
       'notify_posts': posts.toString(),
@@ -131,6 +132,7 @@ class NotificationService {
       'notify_connections': connections.toString(),
       'notify_events': events.toString(),
       'notify_safety': safetyAlerts.toString(),
+      'notify_groups': groups.toString(),
     });
   }
 

@@ -4,12 +4,13 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/connections_provider.dart';
 import '../providers/feed_provider.dart';
+import '../providers/groups_provider.dart';
 import '../providers/presence_provider.dart';
 import '../providers/realtime_status_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../theme/app_theme_tokens.dart';
 import 'feed/feed_screen.dart';
-import 'groups_screen.dart';
+import 'groups/groups_list_screen.dart';
 import 'connections_screen.dart';
 import 'connections/messages_list_screen.dart';
 
@@ -30,6 +31,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _showBottomNav = true;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Realtime manager references for badge listeners
+  FeedRealtimeManager? _feedRealtime;
+  GroupsRealtimeManager? _groupsRealtime;
+
   @override
   void initState() {
     super.initState();
@@ -40,12 +45,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(connectionsRealtimeProvider).subscribeAll();
       ref.read(feedRealtimeProvider).subscribeAll();
+      ref.read(groupsRealtimeProvider).subscribeAll();
       ref.read(presenceProvider).startTracking();
+
+      // Store references and add badge listeners
+      _feedRealtime = ref.read(feedRealtimeProvider);
+      _groupsRealtime = ref.read(groupsRealtimeProvider);
+      _feedRealtime!.addListener(_onBadgeCountChanged);
+      _groupsRealtime!.addListener(_onBadgeCountChanged);
     });
+  }
+
+  void _onBadgeCountChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _feedRealtime?.removeListener(_onBadgeCountChanged);
+    _groupsRealtime?.removeListener(_onBadgeCountChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -93,7 +111,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   }
                 },
               ),
-              GroupsScreen(onMenuTap: _openDrawer),
+              GroupsListScreen(onMenuTap: _openDrawer),
               MessagesListScreen(onMenuTap: _openDrawer),
               ConnectionsScreen(onMenuTap: _openDrawer),
             ],
@@ -431,10 +449,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(context, icon: Icons.forum_outlined, selectedIcon: Icons.forum, label: 'Social', index: 0),
-            _buildNavItem(context, icon: Icons.groups_outlined, selectedIcon: Icons.groups, label: 'Groups', index: 1),
-            _buildNavItem(context, icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble, label: 'Messages', index: 2),
-            _buildNavItem(context, icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Network', index: 3),
+            _buildNavItem(context, icon: Icons.forum_outlined, selectedIcon: Icons.forum, label: 'Social', index: 0, badgeCount: _feedRealtime?.newPostsCount ?? 0),
+            _buildNavItem(context, icon: Icons.groups_outlined, selectedIcon: Icons.groups, label: 'Groups', index: 1, badgeCount: _groupsRealtime?.totalNewPostsCount ?? 0),
+            _buildNavItem(context, icon: Icons.chat_bubble_outline, selectedIcon: Icons.chat_bubble, label: 'Messages', index: 2, badgeCount: ref.watch(unreadMessagesCountProvider)),
+            _buildNavItem(context, icon: Icons.people_outline, selectedIcon: Icons.people, label: 'Network', index: 3, badgeCount: ref.watch(pendingRequestsCountProvider)),
           ],
         ),
       ),
@@ -447,6 +465,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     required IconData selectedIcon,
     required String label,
     required int index,
+    int badgeCount = 0,
   }) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final colorScheme = Theme.of(context).colorScheme;
@@ -454,10 +473,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() {
-          _selectedIndex = index;
-          _showBottomNav = true;
-        }),
+        onTap: () {
+          if (index == 0) _feedRealtime?.resetNewPostsCount();
+          setState(() {
+            _selectedIndex = index;
+            _showBottomNav = true;
+          });
+        },
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -474,13 +496,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Icon(
-                  isSelected ? selectedIcon : icon,
-                  key: ValueKey(isSelected),
-                  color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
-                  size: tokens.iconMd,
+              Badge(
+                isLabelVisible: badgeCount > 0 && !isSelected,
+                label: Text(badgeCount > 99 ? '99+' : '$badgeCount'),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    isSelected ? selectedIcon : icon,
+                    key: ValueKey(isSelected),
+                    color: isSelected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                    size: tokens.iconMd,
+                  ),
                 ),
               ),
               SizedBox(height: tokens.spacingXs),

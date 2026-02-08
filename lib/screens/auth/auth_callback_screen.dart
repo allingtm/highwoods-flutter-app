@@ -33,87 +33,76 @@ class _AuthCallbackScreenState extends ConsumerState<AuthCallbackScreen> {
     _handleDeepLink();
   }
 
-  /// Waits for Supabase auth state to emit signedIn event (or times out)
-  Future<User?> _waitForAuthState() async {
-    final completer = Completer<User?>();
-    StreamSubscription<AuthState>? subscription;
-
-    subscription =
-        Supabase.instance.client.auth.onAuthStateChange.listen((state) {
-      if (state.event == AuthChangeEvent.signedIn &&
-          state.session?.user != null) {
-        if (!completer.isCompleted) {
-          completer.complete(state.session?.user);
-        }
-        subscription?.cancel();
-      }
-    });
-
-    // Check if user is already set (session may have propagated already)
-    final currentUser = Supabase.instance.client.auth.currentUser;
-    if (currentUser != null && !completer.isCompleted) {
-      completer.complete(currentUser);
-      subscription.cancel();
-      return currentUser;
-    }
-
-    // Wait with timeout to prevent infinite hang
-    try {
-      return await completer.future.timeout(const Duration(seconds: 5));
-    } on TimeoutException {
-      subscription.cancel();
-      return null;
-    }
-  }
-
   Future<void> _handleDeepLink() async {
     try {
-      // Get the incoming URI using app_links
+      // Get the incoming URI using app_links (needed for profile data in
+      // registration flow). We only use this for extracting query params —
+      // the supabase_flutter SDK automatically handles the auth code exchange
+      // via its own app_links listener.
       final appLinks = AppLinks();
 
       // Try to get the initial link (for cold start)
       Uri? uri = await appLinks.getInitialLink();
 
-      // If no initial link, wait for a link via the stream (for warm/hot start)
-      if (uri == null) {
-        try {
-          uri = await appLinks.uriLinkStream.first.timeout(
-            const Duration(seconds: 3),
-          );
-        } catch (e) {
-          // Timeout waiting for link
-          if (mounted) {
-            setState(() {
-              _errorMessage = 'No authentication link received.';
-              _isProcessing = false;
-            });
-          }
-          return;
-        }
+      // Extract profile data from query parameters (if present - registration flow)
+      String? username;
+      String? firstName;
+      String? lastName;
+      if (uri != null) {
+        debugPrint('📱 Received deep link URI: $uri');
+        username = uri.queryParameters['username'];
+        firstName = uri.queryParameters['firstName'];
+        lastName = uri.queryParameters['lastName'];
       }
 
       if (!mounted) return;
 
-      // Debug: Print the received URI
-      debugPrint('📱 Received deep link URI: $uri');
-      debugPrint('📱 URI host: ${uri.host}');
-      debugPrint('📱 URI path: ${uri.path}');
-      debugPrint('📱 URI query params: ${uri.queryParameters}');
+      // The supabase_flutter SDK (v2+) automatically intercepts auth deep links
+      // via app_links, detects the PKCE `code` param, and calls
+      // getSessionFromUrl() internally. This fires signedIn or passwordRecovery
+      // on onAuthStateChange. We do NOT call getSessionFromUrl() here to avoid
+      // double-processing (the code can only be exchanged once).
+      //
+      // For passwordRecovery events, the global listener in MainApp handles
+      // navigation to /auth/reset-password. Here we just wait for signedIn
+      // to proceed with the profile check.
+      final eventCompleter = Completer<(User?, AuthChangeEvent?)>();
+      final subscription =
+          Supabase.instance.client.auth.onAuthStateChange.listen((state) {
+        if ((state.event == AuthChangeEvent.signedIn ||
+                state.event == AuthChangeEvent.passwordRecovery) &&
+            state.session?.user != null) {
+          if (!eventCompleter.isCompleted) {
+            eventCompleter.complete((state.session?.user, state.event));
+          }
+        }
+      });
 
-      // Extract profile data from query parameters (if present - registration flow)
-      final username = uri.queryParameters['username'];
-      final firstName = uri.queryParameters['firstName'];
-      final lastName = uri.queryParameters['lastName'];
-
-      // Process the authentication URI with Supabase
-      debugPrint('📱 Processing auth with Supabase...');
-      await Supabase.instance.client.auth.getSessionFromUrl(uri);
-      debugPrint('📱 Supabase processing complete');
+      // Wait for the SDK to process the auth deep link and fire the event
+      User? user;
+      AuthChangeEvent? event;
+      try {
+        (user, event) = await eventCompleter.future
+            .timeout(const Duration(seconds: 10));
+      } on TimeoutException {
+        // Fallback: check if user is already set (SDK may have processed it
+        // before this listener was set up)
+        user = Supabase.instance.client.auth.currentUser;
+        event = null;
+      } finally {
+        subscription.cancel();
+      }
 
       if (!mounted) return;
 
-      // Wait for auth state to actually propagate (not just arbitrary delay)
-      final user = await _waitForAuthState();
+      // Password recovery is handled by the global listener in MainApp.
+      // If we still catch it here, redirect as a safety net.
+      if (event == AuthChangeEvent.passwordRecovery) {
+        if (mounted) {
+          context.go('/auth/reset-password');
+        }
+        return;
+      }
 
       if (user != null) {
         // Check if profile exists

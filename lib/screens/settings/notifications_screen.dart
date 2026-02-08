@@ -115,6 +115,16 @@ class NotificationsScreen extends ConsumerWidget {
           _buildNotificationToggle(
             context,
             ref,
+            icon: Icons.groups_outlined,
+            title: 'Groups',
+            subtitle: 'Membership updates',
+            value: prefs.groups,
+            onChanged: (v) =>
+                ref.read(notificationPreferencesProvider.notifier).toggleGroups(v),
+          ),
+          _buildNotificationToggle(
+            context,
+            ref,
             icon: Icons.warning_amber_outlined,
             title: 'Safety Alerts',
             subtitle: 'Important community alerts',

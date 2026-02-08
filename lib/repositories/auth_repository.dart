@@ -11,66 +11,51 @@ class AuthRepository {
 
   Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
 
-  /// Sends a magic link for registration (allows creating new users).
-  Future<void> sendOTP({
+  /// Signs in an existing user with email and password.
+  Future<AuthResponse> signInWithPassword({
     required String email,
-    String? username,
-    String? firstName,
-    String? lastName,
+    required String password,
   }) async {
     try {
-      // Build redirect URL with optional profile parameters
-      var redirectUrl = 'https://app.highwoods.co.uk/auth/magic-link';
-      if (username != null && firstName != null && lastName != null) {
-        final params = Uri(queryParameters: {
-          'username': username,
-          'firstName': firstName,
-          'lastName': lastName,
-        }).query;
-        redirectUrl = '$redirectUrl?$params';
-      }
-
-      await _supabase.auth.signInWithOtp(
+      return await _supabase.auth.signInWithPassword(
         email: email,
-        emailRedirectTo: redirectUrl,
+        password: password,
       );
     } on AuthException catch (e) {
-      throw Exception('Failed to send OTP: ${e.message}');
+      throw Exception(e.message);
     } catch (e) {
-      throw Exception('Failed to send OTP: $e');
+      throw Exception('Failed to sign in: $e');
     }
   }
 
-  /// Sends a magic link for login only (does not create new users).
-  Future<void> sendLoginOTP({required String email}) async {
+  /// Creates a new user account with email and password.
+  Future<AuthResponse> signUpWithPassword({
+    required String email,
+    required String password,
+  }) async {
     try {
-      await _supabase.auth.signInWithOtp(
+      return await _supabase.auth.signUp(
         email: email,
-        emailRedirectTo: 'https://app.highwoods.co.uk/auth/magic-link',
-        shouldCreateUser: false,
+        password: password,
       );
     } on AuthException catch (e) {
-      throw Exception('Failed to send OTP: ${e.message}');
+      throw Exception(e.message);
     } catch (e) {
-      throw Exception('Failed to send OTP: $e');
+      throw Exception('Failed to sign up: $e');
     }
   }
 
-  Future<AuthResponse> verifyOTP({
-    required String email,
-    required String token,
-  }) async {
+  /// Sends a password reset email to the user.
+  Future<void> resetPassword({required String email}) async {
     try {
-      final response = await _supabase.auth.verifyOTP(
-        email: email,
-        token: token,
-        type: OtpType.email,
+      await _supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'https://app.highwoods.co.uk/auth/confirm',
       );
-      return response;
     } on AuthException catch (e) {
-      throw Exception('Failed to verify OTP: ${e.message}');
+      throw Exception(e.message);
     } catch (e) {
-      throw Exception('Failed to verify OTP: $e');
+      throw Exception('Failed to send reset email: $e');
     }
   }
 
@@ -162,6 +147,19 @@ class AuthRepository {
       throw Exception('Failed to update profile: ${e.message}');
     } catch (e) {
       throw Exception('Failed to update profile: $e');
+    }
+  }
+
+  /// Updates the current user's password (used after password recovery).
+  Future<void> updatePassword({required String newPassword}) async {
+    try {
+      await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } on AuthException catch (e) {
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception('Failed to update password: $e');
     }
   }
 

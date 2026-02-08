@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/error_utils.dart';
 import '../../widgets/widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -14,36 +15,46 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  bool _magicLinkSent = false;
+  String? _errorMessage;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _sendMagicLink() async {
+  Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
       final authRepository = ref.read(authRepositoryProvider);
-      await authRepository.sendLoginOTP(email: _emailController.text.trim());
-    } catch (e) {
-      // Silently ignore errors to prevent user enumeration
-      // (don't reveal whether an email exists or not)
-    }
+      await authRepository.signInWithPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
 
-    // Always show success message for security
-    setState(() {
-      _magicLinkSent = true;
-      _isLoading = false;
-    });
+      if (mounted) {
+        context.go('/home');
+      }
+    } catch (e, stackTrace) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage =
+              handleError(e, stackTrace, operation: 'login_sign_in');
+        });
+      }
+    }
   }
 
   void _dismissKeyboard() {
@@ -92,94 +103,86 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       SizedBox(height: tokens.spacing2xl),
 
-                      if (!_magicLinkSent) ...[
-                        // Welcome text
-                        Text(
-                          'Welcome back',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          textAlign: TextAlign.center,
+                      // Welcome text
+                      Text(
+                        'Welcome back',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
-                        SizedBox(height: tokens.spacingSm),
-                        Text(
-                          'Sign in to your community',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: tokens.spacingSm),
+                      Text(
+                        'Sign in to your community',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
-                        SizedBox(height: tokens.spacing2xl),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: tokens.spacing2xl),
 
-                        // Email field
-                        AppTextField.email(
-                          controller: _emailController,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
-                            }
-                            if (!value.contains('@')) {
-                              return 'Please enter a valid email';
-                            }
-                            return null;
-                          },
-                        ),
+                      // Email field
+                      AppTextField.email(
+                        controller: _emailController,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
 
-                        SizedBox(height: tokens.spacingXl),
+                      SizedBox(height: tokens.spacingLg),
 
-                        // Send button
-                        AppButton(
-                          text: 'Send Magic Link',
-                          onPressed: _sendMagicLink,
-                          isLoading: _isLoading,
-                        ),
-                      ] else ...[
-                        // Magic link sent state
-                        Icon(
-                          Icons.mark_email_read_outlined,
-                          size: tokens.iconXl,
-                          color: theme.colorScheme.primary,
-                        ),
-                        SizedBox(height: tokens.spacingXl),
-                        Text(
-                          'Check your inbox',
-                          style: theme.textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
+                      // Password field
+                      AppTextField.password(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: tokens.spacingLg),
-                        Text(
-                          'We sent a magic link to',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: tokens.spacingSm),
-                        Text(
-                          _emailController.text.trim(),
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: tokens.spacingXl),
-                        AppInfoContainer(
-                          icon: Icons.touch_app_rounded,
-                          child: const Text('Tap the link in your email to sign in'),
-                        ),
-                        SizedBox(height: tokens.spacingXl),
-                        AppButton(
-                          text: 'Use a different email',
-                          variant: AppButtonVariant.outline,
                           onPressed: () {
                             setState(() {
-                              _magicLinkSent = false;
+                              _obscurePassword = !_obscurePassword;
                             });
                           },
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      // Forgot password link
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () => context.push('/forgot-password'),
+                          child: const Text('Forgot Password?'),
+                        ),
+                      ),
+
+                      if (_errorMessage != null) ...[
+                        SizedBox(height: tokens.spacingSm),
+                        AppErrorContainer(message: _errorMessage!),
                       ],
+
+                      SizedBox(height: tokens.spacingLg),
+
+                      // Sign in button
+                      AppButton(
+                        text: 'Sign In',
+                        onPressed: _signIn,
+                        isLoading: _isLoading,
+                      ),
 
                       SizedBox(height: tokens.spacing2xl),
                       const Divider(),

@@ -9,7 +9,7 @@ class PostActionsRow extends StatelessWidget {
     required this.post,
     required this.onReactionTap,
     required this.onCommentTap,
-    required this.onSaveTap,
+    this.onSaveTap,
     this.onMessageTap,
     this.showMessageButton = false,
     this.compact = false,
@@ -18,7 +18,7 @@ class PostActionsRow extends StatelessWidget {
   final Post post;
   final VoidCallback onReactionTap;
   final VoidCallback onCommentTap;
-  final VoidCallback onSaveTap;
+  final VoidCallback? onSaveTap;
   final VoidCallback? onMessageTap;
   final bool showMessageButton;
   final bool compact;
@@ -58,17 +58,19 @@ class PostActionsRow extends StatelessWidget {
             compact: compact,
           ),
         ],
-        const Spacer(),
-        // Save button
-        _ActionButton(
-          icon: post.isSaved
-              ? Icons.bookmark_rounded
-              : Icons.bookmark_border_rounded,
-          isActive: post.isSaved,
-          activeColor: theme.colorScheme.primary,
-          onTap: onSaveTap,
-          compact: compact,
-        ),
+        if (onSaveTap != null) ...[
+          const Spacer(),
+          // Save button
+          _ActionButton(
+            icon: post.isSaved
+                ? Icons.bookmark_rounded
+                : Icons.bookmark_border_rounded,
+            isActive: post.isSaved,
+            activeColor: theme.colorScheme.primary,
+            onTap: onSaveTap!,
+            compact: compact,
+          ),
+        ],
       ],
     );
   }

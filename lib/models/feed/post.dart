@@ -55,6 +55,9 @@ class Post {
   final JobDetails? jobDetails;
   final RecommendationDetails? recommendationDetails;
 
+  // Group context (null = main feed post)
+  final String? groupId;
+
   // User's interaction state (for logged-in users)
   final bool isSaved;
   final String? userReaction;
@@ -88,6 +91,7 @@ class Post {
     this.lostFoundDetails,
     this.jobDetails,
     this.recommendationDetails,
+    this.groupId,
     this.isSaved = false,
     this.userReaction,
   });
@@ -151,6 +155,7 @@ class Post {
       recommendationDetails: category == PostCategory.recommendations
           ? RecommendationDetails.fromFeedJson(json)
           : null,
+      groupId: json['group_id'] as String?,
       isSaved: json['is_saved'] as bool? ?? false,
       userReaction: json['user_reaction'] as String?,
     );
@@ -213,6 +218,7 @@ class Post {
       recommendationDetails: json['recommendation_details'] != null
           ? RecommendationDetails.fromJson(json['recommendation_details'] as Map<String, dynamic>)
           : null,
+      groupId: json['group_id'] as String?,
       isSaved: json['is_saved'] as bool? ?? false,
       userReaction: json['user_reaction'] as String?,
     );
@@ -246,6 +252,7 @@ class Post {
       if (title != null) 'title': title,
       'content': content,
       'status': status.dbValue,
+      if (groupId != null) 'group_id': groupId,
     };
   }
 
@@ -278,6 +285,7 @@ class Post {
     LostFoundDetails? lostFoundDetails,
     JobDetails? jobDetails,
     RecommendationDetails? recommendationDetails,
+    Object? groupId = _sentinel,
     bool? isSaved,
     // Use Object? with sentinel to allow explicitly setting to null
     Object? userReaction = _sentinel,
@@ -317,6 +325,7 @@ class Post {
       lostFoundDetails: lostFoundDetails ?? this.lostFoundDetails,
       jobDetails: jobDetails ?? this.jobDetails,
       recommendationDetails: recommendationDetails ?? this.recommendationDetails,
+      groupId: groupId == _sentinel ? this.groupId : groupId as String?,
       isSaved: isSaved ?? this.isSaved,
       // If sentinel, keep existing value; otherwise use the provided value (including null)
       userReaction: userReaction == _sentinel
@@ -338,6 +347,7 @@ class Post {
   bool get isJob => jobDetails != null;
   bool get isRecommendation => recommendationDetails != null;
   bool get hasUserReacted => userReaction != null;
+  bool get isGroupPost => groupId != null;
 
   /// Returns a short preview of the content (first 100 chars)
   String get contentPreview {

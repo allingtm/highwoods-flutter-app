@@ -310,7 +310,11 @@ class _EditPostScreenState extends ConsumerState<EditPostScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        context.go('/feed');
+        if (_post?.groupId != null) {
+          context.go('/group/${_post!.groupId}');
+        } else {
+          context.go('/feed');
+        }
       }
     } catch (e, stackTrace) {
       setState(() => _errorMessage = handleError(e, stackTrace, operation: 'edit_post'));
