@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../providers/auth_provider.dart';
+import '../../providers/biometric_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_color_palette.dart';
 
@@ -23,6 +24,13 @@ class AccountScreen extends ConsumerWidget {
       body: ListView(
         padding: EdgeInsets.all(tokens.spacingLg),
         children: [
+          // Security section
+          _buildSectionHeader(context, 'Security'),
+          SizedBox(height: tokens.spacingSm),
+          _buildBiometricToggle(context, ref),
+          SizedBox(height: tokens.spacingXl),
+
+          // Danger Zone section
           _buildSectionHeader(context, 'Danger Zone', isDestructive: true),
           SizedBox(height: tokens.spacingSm),
           _buildSettingsTile(
@@ -38,7 +46,164 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title, {bool isDestructive = false}) {
+  Widget _buildBiometricToggle(BuildContext context, WidgetRef ref) {
+    final tokens = context.tokens;
+    final colorScheme = Theme.of(context).colorScheme;
+    final canOffer = ref.watch(canOfferBiometricProvider);
+    final biometricEnabled = ref.watch(biometricEnabledProvider);
+    final biometricLabel = ref.watch(biometricLabelProvider);
+
+    return canOffer.when(
+      data: (canOffer) {
+        if (!canOffer) {
+          return Card(
+            elevation: 0,
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            margin: EdgeInsets.only(bottom: tokens.spacingSm),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(tokens.radiusMd),
+            ),
+            child: ListTile(
+              leading: Icon(Icons.fingerprint,
+                  color: colorScheme.onSurfaceVariant),
+              title: const Text(
+                'Biometric Login',
+                style: TextStyle(fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(
+                'Not available on this device',
+                style: TextStyle(color: context.colors.textSecondary),
+              ),
+            ),
+          );
+        }
+
+        final label = biometricLabel.valueOrNull ?? 'Biometrics';
+        final isEnabled = biometricEnabled.valueOrNull ?? false;
+
+        return Card(
+          elevation: 0,
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+          margin: EdgeInsets.only(bottom: tokens.spacingSm),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.radiusMd),
+          ),
+          child: SwitchListTile(
+            secondary: Icon(
+              label == 'Face ID' ? Icons.face : Icons.fingerprint,
+              color: colorScheme.primary,
+            ),
+            title: Text(
+              '$label Login',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text(
+              isEnabled
+                  ? 'Sign in quickly with $label'
+                  : 'Use $label to sign in',
+              style: TextStyle(
+                color: context.colors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+            value: isEnabled,
+            onChanged: (value) async {
+              if (value) {
+                await _promptPasswordForBiometricEnrollment(
+                    context, ref, label);
+              } else {
+                await ref.read(biometricEnabledProvider.notifier).disable();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('$label login disabled')),
+                  );
+                }
+              }
+            },
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  Future<void> _promptPasswordForBiometricEnrollment(
+    BuildContext context,
+    WidgetRef ref,
+    String biometricLabel,
+  ) async {
+    final passwordController = TextEditingController();
+    final tokens = context.tokens;
+
+    final password = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Enable $biometricLabel Login'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Enter your password to enable $biometricLabel login.'),
+            SizedBox(height: tokens.spacingMd),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                hintText: 'Password',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(tokens.radiusMd),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, passwordController.text),
+            child: const Text('Enable'),
+          ),
+        ],
+      ),
+    );
+
+    passwordController.dispose();
+
+    if (password == null || password.isEmpty) return;
+
+    final currentUser = ref.read(currentUserProvider);
+    final email = currentUser?.email;
+
+    if (email == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Could not determine your email address')),
+        );
+      }
+      return;
+    }
+
+    final success = await ref.read(biometricEnabledProvider.notifier).enable(
+          email: email,
+          password: password,
+        );
+
+    if (context.mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$biometricLabel login enabled')),
+        );
+      }
+    }
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title,
+      {bool isDestructive = false}) {
     final tokens = context.tokens;
     final colors = context.colors;
     return Padding(
@@ -91,13 +256,16 @@ class AccountScreen extends ConsumerWidget {
                 style: TextStyle(color: context.colors.textSecondary),
               )
             : null,
-        trailing: isDestructive ? null : Icon(Icons.chevron_right, color: context.colors.textSecondary),
+        trailing: isDestructive
+            ? null
+            : Icon(Icons.chevron_right, color: context.colors.textSecondary),
         onTap: onTap,
       ),
     );
   }
 
-  Future<void> _showDeleteAccountDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showDeleteAccountDialog(
+      BuildContext context, WidgetRef ref) async {
     final router = GoRouter.of(context);
     final tokens = context.tokens;
 
@@ -106,7 +274,8 @@ class AccountScreen extends ConsumerWidget {
       builder: (dialogContext) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Theme.of(dialogContext).colorScheme.error),
+            Icon(Icons.warning_amber_rounded,
+                color: Theme.of(dialogContext).colorScheme.error),
             SizedBox(width: tokens.spacingSm),
             const Text('Delete Account?'),
           ],
@@ -134,7 +303,8 @@ class AccountScreen extends ConsumerWidget {
             onPressed: () => Navigator.pop(dialogContext, true),
             child: Text(
               'Delete Account',
-              style: TextStyle(color: Theme.of(dialogContext).colorScheme.error),
+              style: TextStyle(
+                  color: Theme.of(dialogContext).colorScheme.error),
             ),
           ),
         ],
@@ -182,7 +352,10 @@ class AccountScreen extends ConsumerWidget {
                 style: TextStyle(
                   color: textController.text == 'DELETE ACCOUNT'
                       ? Theme.of(dialogContext).colorScheme.error
-                      : Theme.of(dialogContext).colorScheme.onSurface.withValues(alpha: 0.38),
+                      : Theme.of(dialogContext)
+                          .colorScheme
+                          .onSurface
+                          .withValues(alpha: 0.38),
                 ),
               ),
             ),

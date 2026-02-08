@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_profile.dart';
+import '../services/biometric_service.dart';
 import '../services/notification_service.dart';
 import '../services/purchase_service.dart';
 import '../services/sentry_service.dart';
@@ -156,6 +157,8 @@ class AuthRepository {
       await _supabase.auth.updateUser(
         UserAttributes(password: newPassword),
       );
+      // Stored biometric credentials are now invalid
+      await BiometricService.disableBiometricLogin();
     } on AuthException catch (e) {
       throw Exception(e.message);
     } catch (e) {
@@ -169,6 +172,8 @@ class AuthRepository {
       await NotificationService.logout();
       // Clear purchase user data
       await PurchaseService.logout();
+      // Clear stored biometric credentials (keep preference for re-enrollment)
+      await BiometricService.clearCredentials();
       await _supabase.auth.signOut();
       SentryService.addBreadcrumb('User signed out', category: 'auth');
     } on AuthException catch (e) {
@@ -197,6 +202,8 @@ class AuthRepository {
       await NotificationService.logout();
       // Clear purchase user data
       await PurchaseService.logout();
+      // Clear biometric login data
+      await BiometricService.disableBiometricLogin();
 
       // Sign out to clear local session
       await _supabase.auth.signOut();

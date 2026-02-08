@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../providers/auth_provider.dart';
+import '../../providers/biometric_provider.dart';
+import '../../services/biometric_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/error_utils.dart';
 import '../../widgets/widgets.dart';
@@ -18,14 +21,78 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+  bool _biometricLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _attemptAutomaticBiometricLogin();
+    });
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _attemptAutomaticBiometricLogin() async {
+    final shouldAttempt = await BiometricService.shouldAttemptBiometricLogin();
+    if (shouldAttempt && mounted) {
+      _signInWithBiometrics();
+    }
+  }
+
+  Future<void> _signInWithBiometrics() async {
+    setState(() {
+      _biometricLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authenticated = await BiometricService.authenticate();
+      if (!authenticated) {
+        if (mounted) setState(() => _biometricLoading = false);
+        return;
+      }
+
+      final credentials = await BiometricService.getCredentials();
+      if (credentials == null) {
+        if (mounted) {
+          setState(() {
+            _biometricLoading = false;
+            _errorMessage =
+                'Stored credentials not found. Please sign in with your password.';
+          });
+        }
+        return;
+      }
+
+      final authRepository = ref.read(authRepositoryProvider);
+      await authRepository.signInWithPassword(
+        email: credentials.email,
+        password: credentials.password,
+      );
+
+      if (mounted) {
+        context.go('/home');
+      }
+    } catch (e) {
+      // Credentials may be stale (e.g. password changed on another device)
+      await BiometricService.disableBiometricLogin();
+      if (mounted) {
+        ref.invalidate(shouldAttemptBiometricProvider);
+        setState(() {
+          _biometricLoading = false;
+          _errorMessage =
+              'Biometric sign in failed. Please enter your password.';
+        });
+      }
+    }
   }
 
   Future<void> _signIn() async {
@@ -37,13 +104,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
       final authRepository = ref.read(authRepositoryProvider);
       await authRepository.signInWithPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+        email: email,
+        password: password,
       );
 
+      // Store credentials for biometric enrollment prompt (shown on HomeScreen)
       if (mounted) {
+        final canOffer = await BiometricService.canOfferBiometricLogin();
+        final isEnabled = await BiometricService.isBiometricEnabled();
+
+        if (canOffer && !isEnabled) {
+          ref.read(pendingBiometricEnrollmentProvider.notifier).state =
+              (email: email, password: password);
+        }
+
         context.go('/home');
       }
     } catch (e, stackTrace) {
@@ -65,6 +144,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final tokens = context.tokens;
     final theme = Theme.of(context);
+    final shouldAttemptBiometric = ref.watch(shouldAttemptBiometricProvider);
+    final biometricLabel = ref.watch(biometricLabelProvider);
 
     return GestureDetector(
       onTap: _dismissKeyboard,
@@ -182,6 +263,48 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         text: 'Sign In',
                         onPressed: _signIn,
                         isLoading: _isLoading,
+                      ),
+
+                      // Biometric login button
+                      shouldAttemptBiometric.when(
+                        data: (should) {
+                          if (!should) return const SizedBox.shrink();
+                          final label =
+                              biometricLabel.valueOrNull ?? 'Biometrics';
+                          return Column(
+                            children: [
+                              SizedBox(height: tokens.spacingMd),
+                              OutlinedButton.icon(
+                                onPressed: _biometricLoading
+                                    ? null
+                                    : _signInWithBiometrics,
+                                icon: Icon(
+                                  label == 'Face ID'
+                                      ? Icons.face
+                                      : Icons.fingerprint,
+                                ),
+                                label: _biometricLoading
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : Text('Sign in with $label'),
+                                style: OutlinedButton.styleFrom(
+                                  minimumSize:
+                                      const Size(double.infinity, 48),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        tokens.radiusMd),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
                       ),
 
                       SizedBox(height: tokens.spacing2xl),

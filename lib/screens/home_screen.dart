@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../providers/biometric_provider.dart';
 import '../providers/connections_provider.dart';
 import '../providers/feed_provider.dart';
 import '../providers/groups_provider.dart';
 import '../providers/presence_provider.dart';
 import '../providers/realtime_status_provider.dart';
 import '../providers/user_profile_provider.dart';
+import '../services/biometric_service.dart';
 import '../theme/app_theme_tokens.dart';
 import 'feed/feed_screen.dart';
 import 'groups/groups_list_screen.dart';
@@ -53,11 +55,56 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       _groupsRealtime = ref.read(groupsRealtimeProvider);
       _feedRealtime!.addListener(_onBadgeCountChanged);
       _groupsRealtime!.addListener(_onBadgeCountChanged);
+
+      // Check for pending biometric enrollment after login
+      _checkBiometricEnrollment();
     });
   }
 
   void _onBadgeCountChanged() {
     if (mounted) setState(() {});
+  }
+
+  Future<void> _checkBiometricEnrollment() async {
+    final pending = ref.read(pendingBiometricEnrollmentProvider);
+    if (pending == null) return;
+
+    // Clear immediately so it doesn't re-trigger
+    ref.read(pendingBiometricEnrollmentProvider.notifier).state = null;
+
+    if (!mounted) return;
+
+    final biometricLabel = await BiometricService.getBiometricLabel();
+
+    if (!mounted) return;
+
+    final shouldEnable = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Enable $biometricLabel Login?'),
+        content: Text(
+          'Would you like to use $biometricLabel to sign in next time? '
+          'You can change this later in Account settings.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Not Now'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('Enable $biometricLabel'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldEnable == true && mounted) {
+      await ref.read(biometricEnabledProvider.notifier).enable(
+            email: pending.email,
+            password: pending.password,
+          );
+    }
   }
 
   @override
