@@ -378,7 +378,6 @@ class _StableTypewriterState extends State<_StableTypewriter> {
         var remainingChars = _charIndex;
         final lineContents = <String>[];
         int? cursorLineIndex;
-        int? cursorPositionInLine;
 
         for (var i = 0; i < _lines.length; i++) {
           final line = _lines[i];
@@ -397,12 +396,10 @@ class _StableTypewriterState extends State<_StableTypewriter> {
               // Only the space is typed, line appears empty
               lineContents.add('');
               cursorLineIndex = i;
-              cursorPositionInLine = 0;
             } else {
               final charsToShow = i == 0 ? remainingChars : remainingChars - 1;
               lineContents.add(line.substring(0, charsToShow));
               cursorLineIndex = i;
-              cursorPositionInLine = charsToShow;
             }
             remainingChars = 0;
           }
@@ -411,7 +408,6 @@ class _StableTypewriterState extends State<_StableTypewriter> {
         // If we've shown all chars but cursor line not set, cursor is at end
         if (cursorLineIndex == null && _charIndex < widget.text.length) {
           cursorLineIndex = lineContents.length - 1;
-          cursorPositionInLine = lineContents.last.length;
         }
 
         final isTyping = _charIndex < widget.text.length && _started;

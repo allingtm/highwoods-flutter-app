@@ -16,7 +16,6 @@ import 'services/purchase_service.dart';
 import 'services/notification_navigation_service.dart';
 import 'services/sentry_service.dart';
 import 'theme/app_color_palette.dart';
-import 'theme/app_theme.dart';
 
 Future<void> main() async {
   // Must be called before SentryFlutter.init for frame tracking

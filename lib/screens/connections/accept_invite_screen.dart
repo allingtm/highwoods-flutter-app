@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/invitation.dart';
 import '../../providers/connections_provider.dart';
-import '../../repositories/connections_repository.dart';
 import '../../theme/app_theme.dart';
 
 /// Screen for authenticated users to accept an invitation and connect with the inviter.

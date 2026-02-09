@@ -10,6 +10,7 @@ import '../providers/presence_provider.dart';
 import '../providers/realtime_status_provider.dart';
 import '../providers/user_profile_provider.dart';
 import '../services/biometric_service.dart';
+import '../theme/app_color_palette.dart';
 import '../theme/app_theme_tokens.dart';
 import 'feed/feed_screen.dart';
 import 'groups/groups_list_screen.dart';
@@ -100,10 +101,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
 
     if (shouldEnable == true && mounted) {
-      await ref.read(biometricEnabledProvider.notifier).enable(
+      final error = await ref.read(biometricEnabledProvider.notifier).enable(
             email: pending.email,
             password: pending.password,
           );
+      if (error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error,
+              style: const TextStyle(color: Colors.white),
+            ),
+            backgroundColor: context.colors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     }
   }
 

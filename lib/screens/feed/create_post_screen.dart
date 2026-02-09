@@ -971,7 +971,7 @@ class _MarketplaceFields extends StatelessWidget {
 
         // Condition dropdown
         DropdownButtonFormField<String>(
-          value: condition,
+          initialValue: condition,
           decoration: const InputDecoration(
             labelText: 'Condition',
             border: OutlineInputBorder(),
@@ -1340,7 +1340,7 @@ class _JobFields extends StatelessWidget {
       children: [
         // Job type dropdown
         DropdownButtonFormField<JobType>(
-          value: jobType,
+          initialValue: jobType,
           decoration: const InputDecoration(
             labelText: 'Job type',
             border: OutlineInputBorder(),

@@ -497,6 +497,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
 
   Future<void> _shareInvitation() async {
     setState(() => _isLoading = true);
+    final screenWidth = MediaQuery.of(context).size.width;
 
     try {
       // Create the invitation in the database
@@ -525,7 +526,7 @@ class _InviteScreenState extends ConsumerState<InviteScreen> {
         subject: 'Highwoods Community Invitation',
         sharePositionOrigin: box != null
             ? box.localToGlobal(Offset.zero) & box.size
-            : Rect.fromLTWH(0, 0, MediaQuery.of(context).size.width, 100),
+            : Rect.fromLTWH(0, 0, screenWidth, 100),
       );
 
       if (mounted) {

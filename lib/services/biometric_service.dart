@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -30,19 +32,8 @@ class BiometricService {
   static Future<bool> isDeviceSupported() async {
     try {
       return await _localAuth.isDeviceSupported();
-    } on PlatformException catch (e) {
+    } catch (e) {
       debugPrint('BiometricService: isDeviceSupported error: $e');
-      return false;
-    }
-  }
-
-  /// Whether any biometrics are currently enrolled on the device.
-  static Future<bool> hasEnrolledBiometrics() async {
-    try {
-      final biometrics = await _localAuth.getAvailableBiometrics();
-      return biometrics.isNotEmpty;
-    } on PlatformException catch (e) {
-      debugPrint('BiometricService: hasEnrolledBiometrics error: $e');
       return false;
     }
   }
@@ -58,6 +49,9 @@ class BiometricService {
   }
 
   /// Returns a human-readable label: "Face ID", "Fingerprint", or "Biometrics".
+  ///
+  /// Falls back to platform defaults when [getAvailableBiometrics] returns
+  /// empty (e.g. iOS Face ID permission not yet granted).
   static Future<String> getBiometricLabel() async {
     final biometrics = await getAvailableBiometrics();
     if (biometrics.contains(BiometricType.face)) {
@@ -65,14 +59,21 @@ class BiometricService {
     } else if (biometrics.contains(BiometricType.fingerprint)) {
       return 'Fingerprint';
     }
+    // getAvailableBiometrics() can return [] on iOS when Face ID permission
+    // hasn't been granted yet. Fall back to a sensible platform default.
+    if (Platform.isIOS) return 'Face ID';
+    if (Platform.isAndroid) return 'Fingerprint';
     return 'Biometrics';
   }
 
-  /// Whether biometric login can be offered (device supports + enrolled).
+  /// Whether biometric login can be offered.
+  ///
+  /// Only checks hardware support via [isDeviceSupported]. We intentionally
+  /// don't gate on [hasEnrolledBiometrics] because on iOS,
+  /// `getAvailableBiometrics()` returns empty until the app has been granted
+  /// Face ID permission — which only happens when [authenticate] is called.
   static Future<bool> canOfferBiometricLogin() async {
-    final supported = await isDeviceSupported();
-    if (!supported) return false;
-    return await hasEnrolledBiometrics();
+    return isDeviceSupported();
   }
 
   // ─── Biometric Prompt ───────────────────────────────────────────

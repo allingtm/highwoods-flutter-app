@@ -55,6 +55,10 @@ class Post {
   final JobDetails? jobDetails;
   final RecommendationDetails? recommendationDetails;
 
+  // Media dimensions (for aspect ratio calculation)
+  final int? mediaWidth;
+  final int? mediaHeight;
+
   // Group context (null = main feed post)
   final String? groupId;
 
@@ -85,6 +89,8 @@ class Post {
     this.videoThumbnailUrl,
     this.videoPlaybackUrl,
     this.videoStatus,
+    this.mediaWidth,
+    this.mediaHeight,
     this.marketplaceDetails,
     this.eventDetails,
     this.alertDetails,
@@ -136,6 +142,9 @@ class Post {
       videoThumbnailUrl: json['video_thumbnail_url'] as String?,
       videoPlaybackUrl: json['video_playback_url'] as String?,
       videoStatus: json['video_status'] as String?,
+      // Media dimensions (prefer image dims, fall back to video dims)
+      mediaWidth: (json['primary_image_width'] as int?) ?? (json['video_width'] as int?),
+      mediaHeight: (json['primary_image_height'] as int?) ?? (json['video_height'] as int?),
       // Category-specific details
       marketplaceDetails: category == PostCategory.marketplace
           ? MarketplaceDetails.fromFeedJson(json)
@@ -200,6 +209,8 @@ class Post {
       videoThumbnailUrl: video?.thumbnailUrl,
       videoPlaybackUrl: video?.playbackUrl,
       videoStatus: video?.status.dbValue,
+      mediaWidth: images.isNotEmpty ? images.first.width : video?.width,
+      mediaHeight: images.isNotEmpty ? images.first.height : video?.height,
       marketplaceDetails: json['marketplace_details'] != null
           ? MarketplaceDetails.fromJson(json['marketplace_details'] as Map<String, dynamic>)
           : null,
@@ -279,6 +290,8 @@ class Post {
     Object? videoThumbnailUrl = _sentinel,
     Object? videoPlaybackUrl = _sentinel,
     Object? videoStatus = _sentinel,
+    Object? mediaWidth = _sentinel,
+    Object? mediaHeight = _sentinel,
     MarketplaceDetails? marketplaceDetails,
     EventDetails? eventDetails,
     AlertDetails? alertDetails,
@@ -319,6 +332,8 @@ class Post {
       videoStatus: videoStatus == _sentinel
           ? this.videoStatus
           : videoStatus as String?,
+      mediaWidth: mediaWidth == _sentinel ? this.mediaWidth : mediaWidth as int?,
+      mediaHeight: mediaHeight == _sentinel ? this.mediaHeight : mediaHeight as int?,
       marketplaceDetails: marketplaceDetails ?? this.marketplaceDetails,
       eventDetails: eventDetails ?? this.eventDetails,
       alertDetails: alertDetails ?? this.alertDetails,
@@ -335,6 +350,7 @@ class Post {
   }
 
   // Convenience getters
+  bool get isPortraitMedia => mediaWidth != null && mediaHeight != null && mediaHeight! > mediaWidth!;
   bool get hasImages => images.isNotEmpty || primaryImageUrl != null;
   bool get hasVideo => video != null || videoThumbnailUrl != null;
   bool get hasMedia => hasImages || hasVideo;

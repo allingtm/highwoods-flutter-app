@@ -758,19 +758,23 @@ class _ReportDialogState extends State<_ReportDialog> {
           children: [
             const Text('Why are you reporting this post?'),
             SizedBox(height: tokens.spacingMd),
-            ...List.generate(_reasons.length, (index) {
-              final reason = _reasons[index];
-              return ListTile(
-                title: Text(reason),
-                leading: Radio<String>(
-                  value: reason,
-                  groupValue: _selectedReason,
-                  onChanged: (value) => setState(() => _selectedReason = value),
-                ),
-                onTap: () => setState(() => _selectedReason = reason),
-                contentPadding: EdgeInsets.zero,
-              );
-            }),
+            RadioGroup<String>(
+              groupValue: _selectedReason,
+              onChanged: (value) => setState(() => _selectedReason = value),
+              child: Column(
+                children: List.generate(_reasons.length, (index) {
+                  final reason = _reasons[index];
+                  return ListTile(
+                    title: Text(reason),
+                    leading: Radio<String>(
+                      value: reason,
+                    ),
+                    onTap: () => setState(() => _selectedReason = reason),
+                    contentPadding: EdgeInsets.zero,
+                  );
+                }),
+              ),
+            ),
             SizedBox(height: tokens.spacingMd),
             TextField(
               controller: _detailsController,

@@ -116,7 +116,7 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
               ),
               SizedBox(height: tokens.spacingMd),
               DropdownButtonFormField<GroupVisibility>(
-                value: _visibility,
+                initialValue: _visibility,
                 decoration: const InputDecoration(
                   labelText: 'Visibility',
                 ),

@@ -476,7 +476,7 @@ class _MarketplaceEditFields extends StatelessWidget {
         ],
         SizedBox(height: tokens.spacingMd),
         DropdownButtonFormField<String>(
-          value: condition,
+          initialValue: condition,
           decoration: const InputDecoration(
             labelText: 'Condition',
             border: OutlineInputBorder(),

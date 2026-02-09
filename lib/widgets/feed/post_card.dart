@@ -46,7 +46,7 @@ class PostCard extends StatelessWidget {
             // Media (image or video thumbnail)
             if (post.primaryImageUrl != null || post.videoThumbnailUrl != null)
               AspectRatio(
-                aspectRatio: 16 / 9,
+                aspectRatio: post.isPortraitMedia ? 16 / 13.5 : 16 / 9,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [

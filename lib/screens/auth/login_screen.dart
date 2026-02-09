@@ -114,15 +114,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
 
       // Store credentials for biometric enrollment prompt (shown on HomeScreen)
+      final canOffer = await BiometricService.canOfferBiometricLogin();
+      final isEnabled = await BiometricService.isBiometricEnabled();
+
+      if (canOffer && !isEnabled) {
+        ref.read(pendingBiometricEnrollmentProvider.notifier).state =
+            (email: email, password: password);
+      }
+
       if (mounted) {
-        final canOffer = await BiometricService.canOfferBiometricLogin();
-        final isEnabled = await BiometricService.isBiometricEnabled();
-
-        if (canOffer && !isEnabled) {
-          ref.read(pendingBiometricEnrollmentProvider.notifier).state =
-              (email: email, password: password);
-        }
-
         context.go('/home');
       }
     } catch (e, stackTrace) {

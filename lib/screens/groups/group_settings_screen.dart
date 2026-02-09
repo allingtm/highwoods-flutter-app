@@ -106,7 +106,7 @@ class _GroupSettingsScreenState extends ConsumerState<GroupSettingsScreen> {
                   ),
                   SizedBox(height: tokens.spacingMd),
                   DropdownButtonFormField<GroupVisibility>(
-                    value: _visibility,
+                    initialValue: _visibility,
                     decoration: const InputDecoration(
                       labelText: 'Visibility',
                     ),

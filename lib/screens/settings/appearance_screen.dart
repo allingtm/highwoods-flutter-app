@@ -23,32 +23,8 @@ class AppearanceScreen extends ConsumerWidget {
         backgroundColor: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
       ),
-      body: ListView(
+      body: Padding(
         padding: EdgeInsets.all(tokens.spacingLg),
-        children: [
-          _buildThemeSelector(context, ref, currentThemeVariant, tokens, colors),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThemeSelector(
-    BuildContext context,
-    WidgetRef ref,
-    ThemeVariant currentVariant,
-    AppThemeTokens tokens,
-    AppColorPalette colors,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(tokens.radiusMd),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacingMd),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -69,88 +45,287 @@ class AppearanceScreen extends ConsumerWidget {
                 ),
               ],
             ),
-            SizedBox(height: tokens.spacingMd),
-            Wrap(
-              spacing: tokens.spacingSm,
-              runSpacing: tokens.spacingSm,
-              children: ThemeVariant.values.map((variant) {
-                final isSelected = variant == currentVariant;
-                final previewColors = AppPalettes.getPreviewColors(variant);
-                final bgColor = previewColors[0];
-                final primaryColor = previewColors[1];
-
-                return GestureDetector(
-                  onTap: () {
-                    ref.read(themeVariantProvider.notifier).setThemeVariant(variant);
-                  },
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: bgColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isSelected ? colors.primary : colors.border,
-                            width: isSelected ? 3 : 1,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: colors.primary.withValues(alpha: 0.3),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Center(
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: primaryColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: isSelected
-                                ? Icon(
-                                    Icons.check,
-                                    color: _getCheckColor(primaryColor),
-                                    size: 14,
-                                  )
-                                : null,
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: tokens.spacingXs),
-                      SizedBox(
-                        width: 56,
-                        child: Text(
-                          variant.displayName,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: isSelected ? colors.primary : colors.textMuted,
-                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+            SizedBox(height: tokens.spacingXs),
+            Text(
+              'Choose a theme for the app',
+              style: TextStyle(
+                fontSize: 13,
+                color: colors.textSecondary,
+              ),
+            ),
+            SizedBox(height: tokens.spacingLg),
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: tokens.spacingMd,
+                  mainAxisSpacing: tokens.spacingMd,
+                  childAspectRatio: 0.78,
+                ),
+                itemCount: ThemeVariant.values.length,
+                itemBuilder: (context, index) {
+                  final variant = ThemeVariant.values[index];
+                  final palette = AppPalettes.getPalette(variant);
+                  final isSelected = variant == currentThemeVariant;
+                  return _ThemePreviewCard(
+                    variant: variant,
+                    palette: palette,
+                    isSelected: isSelected,
+                    onTap: () {
+                      ref
+                          .read(themeVariantProvider.notifier)
+                          .setThemeVariant(variant);
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
     );
   }
+}
 
-  Color _getCheckColor(Color backgroundColor) {
-    final luminance = backgroundColor.computeLuminance();
-    return luminance > 0.5 ? const Color(0xFF1A1C1E) : Colors.white;
+class _ThemePreviewCard extends StatelessWidget {
+  const _ThemePreviewCard({
+    required this.variant,
+    required this.palette,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final ThemeVariant variant;
+  final AppColorPalette palette;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final currentColors = context.colors;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: '${variant.displayName} theme${isSelected ? ", selected" : ""}',
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(tokens.radiusLg),
+            border: Border.all(
+              color: isSelected ? currentColors.primary : currentColors.border,
+              width: isSelected ? 2.5 : 1,
+            ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: currentColors.primary.withValues(alpha: 0.2),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildMiniMockup(),
+              ),
+              _buildLabelBar(context, tokens, currentColors),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMiniMockup() {
+    return Container(
+      color: palette.background,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Mini app bar
+          Container(
+            height: 28,
+            color: palette.surface,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              children: [
+                Icon(Icons.menu, size: 12, color: palette.textPrimary),
+                const SizedBox(width: 6),
+                Text(
+                  'Highwoods',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: palette.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.notifications_none,
+                  size: 12,
+                  color: palette.primary,
+                ),
+              ],
+            ),
+          ),
+          // Divider
+          Container(height: 0.5, color: palette.border),
+          // Body area
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: palette.surface,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: palette.borderLight, width: 0.5),
+                ),
+                padding: const EdgeInsets.all(6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Avatar + name row
+                    Row(
+                      children: [
+                        Container(
+                          width: 14,
+                          height: 14,
+                          decoration: BoxDecoration(
+                            color: palette.primaryLight,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Container(
+                          width: 40,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: palette.textPrimary.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    // Text placeholder lines
+                    Container(
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: palette.textSecondary.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    FractionallySizedBox(
+                      widthFactor: 0.7,
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: palette.textSecondary.withValues(alpha: 0.3),
+                          borderRadius: BorderRadius.circular(2.5),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    // Action row: button + secondary accent
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: palette.primary,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Button',
+                            style: TextStyle(
+                              fontSize: 7,
+                              fontWeight: FontWeight.w600,
+                              color: palette.brightness == Brightness.dark
+                                  ? Colors.black
+                                  : Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: palette.secondary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLabelBar(
+    BuildContext context,
+    AppThemeTokens tokens,
+    AppColorPalette currentColors,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: isSelected
+            ? currentColors.primary.withValues(alpha: 0.08)
+            : Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withValues(alpha: 0.5),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            getThemeVariantIcon(variant),
+            size: 14,
+            color:
+                isSelected ? currentColors.primary : currentColors.textSecondary,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              variant.displayName,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected
+                    ? currentColors.primary
+                    : currentColors.textPrimary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (isSelected)
+            Icon(
+              Icons.check_circle,
+              size: 16,
+              color: currentColors.primary,
+            ),
+        ],
+      ),
+    );
   }
 }

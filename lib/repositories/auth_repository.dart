@@ -172,8 +172,9 @@ class AuthRepository {
       await NotificationService.logout();
       // Clear purchase user data
       await PurchaseService.logout();
-      // Clear stored biometric credentials (keep preference for re-enrollment)
-      await BiometricService.clearCredentials();
+      // Keep biometric credentials so Face ID / fingerprint login works after
+      // sign-out. They're encrypted in secure storage and gated behind biometric
+      // auth, so they're safe to retain.
       await _supabase.auth.signOut();
       SentryService.addBreadcrumb('User signed out', category: 'auth');
     } on AuthException catch (e) {

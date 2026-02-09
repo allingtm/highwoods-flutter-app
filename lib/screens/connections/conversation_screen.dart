@@ -483,18 +483,22 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   children: [
                     const Text('Why are you reporting this conversation?'),
                     const SizedBox(height: 16),
-                    ...MessageReportReason.values.map((reason) {
-                      return RadioListTile<MessageReportReason>(
-                        title: Text(reason.displayName),
-                        value: reason,
-                        groupValue: selectedReason,
-                        onChanged: (value) {
-                          setDialogState(() => selectedReason = value);
-                        },
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                      );
-                    }),
+                    RadioGroup<MessageReportReason>(
+                      groupValue: selectedReason,
+                      onChanged: (value) {
+                        setDialogState(() => selectedReason = value);
+                      },
+                      child: Column(
+                        children: MessageReportReason.values.map((reason) {
+                          return RadioListTile<MessageReportReason>(
+                            title: Text(reason.displayName),
+                            value: reason,
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          );
+                        }).toList(),
+                      ),
+                    ),
                     const SizedBox(height: 16),
                     TextField(
                       controller: descriptionController,
@@ -541,7 +545,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final messages = ref.read(messagesProvider(widget.otherUserId)).valueOrNull;
     final messageToReport = messages?.firstWhere(
       (m) => m.senderId == widget.otherUserId,
-      orElse: () => messages!.first,
+      orElse: () => messages.first,
     );
 
     if (messageToReport == null) {

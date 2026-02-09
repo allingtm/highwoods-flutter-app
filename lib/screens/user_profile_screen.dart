@@ -9,7 +9,6 @@ import '../providers/connections_provider.dart';
 import '../providers/feed_provider.dart';
 import '../providers/follow_provider.dart';
 import '../theme/app_theme.dart';
-import '../widgets/widgets.dart';
 import '../widgets/feed/post_card.dart';
 import '../widgets/feed/post_interactions.dart';
 
@@ -56,8 +55,6 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.tokens;
-    final theme = Theme.of(context);
     final profileAsync = ref.watch(otherUserProfileProvider(widget.userId));
     final currentUser = ref.watch(currentUserProvider);
     final isOwnProfile = currentUser?.id == widget.userId;

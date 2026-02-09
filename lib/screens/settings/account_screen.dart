@@ -115,7 +115,14 @@ class AccountScreen extends ConsumerWidget {
                 await ref.read(biometricEnabledProvider.notifier).disable();
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('$label login disabled')),
+                    SnackBar(
+                      content: Text(
+                        '$label login disabled',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      backgroundColor: context.colors.success,
+                      behavior: SnackBarBehavior.floating,
+                    ),
                   );
                 }
               }
@@ -171,8 +178,6 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
 
-    passwordController.dispose();
-
     if (password == null || password.isEmpty) return;
 
     final currentUser = ref.read(currentUserProvider);
@@ -181,24 +186,37 @@ class AccountScreen extends ConsumerWidget {
     if (email == null) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Could not determine your email address')),
+          SnackBar(
+            content: const Text(
+              'Could not determine your email address',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: context.colors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
       return;
     }
 
-    final success = await ref.read(biometricEnabledProvider.notifier).enable(
+    final error = await ref.read(biometricEnabledProvider.notifier).enable(
           email: email,
           password: password,
         );
 
     if (context.mounted) {
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$biometricLabel login enabled')),
-        );
-      }
+      final isSuccess = error == null;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isSuccess ? '$biometricLabel login enabled' : error,
+            style: const TextStyle(color: Colors.white),
+          ),
+          backgroundColor:
+              isSuccess ? context.colors.success : context.colors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -311,7 +329,7 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
 
-    if (firstConfirm != true) return;
+    if (firstConfirm != true || !context.mounted) return;
 
     final textController = TextEditingController();
     final secondConfirm = await showDialog<bool>(
@@ -364,7 +382,7 @@ class AccountScreen extends ConsumerWidget {
       ),
     );
 
-    if (secondConfirm != true) return;
+    if (secondConfirm != true || !context.mounted) return;
 
     showDialog(
       context: context,
